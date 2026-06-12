@@ -22,7 +22,7 @@ app.use("/api/dispatch-assignments", dispatchAssignmentRoutes);
 app.use("/api/driver-locations", driverLocationRoutes);
 app.use("/api/incidents", incidentRoutes);
 connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Server đang chạy ở cổng ${PORT}`);
+  app.listen(PORT, "127.0.0.1", () => {
+    console.log(`Server đang chạy ở http://127.0.0.1:${PORT}`);
   });
 });
