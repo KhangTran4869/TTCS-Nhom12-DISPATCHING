@@ -1,4 +1,12 @@
 import User from "../models/User.js";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET || 'fallback_secret_123', {
+    expiresIn: '30d',
+  });
+};
 
 export const createUser = async (req, res) => {
   try {
@@ -112,6 +120,117 @@ export const deleteUser = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Lỗi xóa người dùng",
+      error: error.message,
+    });
+  }
+};
+
+// ── Authentication ──
+
+export const registerUser = async (req, res) => {
+  try {
+    const { full_name, email, phone, password, role } = req.body;
+
+    // Kiểm tra các field bắt buộc
+    if (!full_name || !email || !password || !role) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng điền đầy đủ thông tin (full_name, email, password, role)",
+      });
+    }
+
+    // Kiểm tra email đã tồn tại
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: "Email đã được đăng ký",
+      });
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(password, salt);
+
+    const user = await User.create({
+      full_name,
+      email,
+      phone,
+      password_hash,
+      role,
+    });
+
+    // Trả về user không kèm password_hash
+    const userResponse = user.toObject();
+    delete userResponse.password_hash;
+
+    res.status(201).json({
+      success: true,
+      message: "Đăng ký thành công",
+      data: userResponse,
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi đăng ký",
+      error: error.message,
+    });
+  }
+};
+
+export const loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Kiểm tra input
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng nhập email và password",
+      });
+    }
+
+    // Tìm user theo email
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "Email hoặc mật khẩu không đúng",
+      });
+    }
+
+    // Kiểm tra tài khoản bị khóa
+    if (user.status === "inactive") {
+      return res.status(403).json({
+        success: false,
+        message: "Tài khoản đã bị khóa",
+      });
+    }
+
+    // So sánh password
+    const isMatch = await bcrypt.compare(password, user.password_hash);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Email hoặc mật khẩu không đúng",
+      });
+    }
+
+    // Trả về user không kèm password_hash
+    const userResponse = user.toObject();
+    delete userResponse.password_hash;
+
+    res.status(200).json({
+      success: true,
+      message: "Đăng nhập thành công",
+      data: userResponse,
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi đăng nhập",
       error: error.message,
     });
   }

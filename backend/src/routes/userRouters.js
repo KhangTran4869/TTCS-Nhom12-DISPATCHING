@@ -5,14 +5,22 @@ import {
   updateUser,
   deleteUser,
   getUserById,
+  registerUser,
+  loginUser,
 } from "../controllers/UserControllers.js";
+import { protect } from "../middleware/authMiddleware.js";
 
 const routes = express.Router();
 
-routes.get("/", getAllUsers);
-routes.get("/:id", getUserById);
-routes.post("/", createUser);
-routes.put("/:id", updateUser);
-routes.delete("/:id", deleteUser);
+// Authentication
+routes.post("/register", registerUser);
+routes.post("/login", loginUser);
+
+// CRUD (Protected)
+routes.get("/", protect, getAllUsers);
+routes.get("/:id", protect, getUserById);
+routes.post("/", protect, createUser);
+routes.put("/:id", protect, updateUser);
+routes.delete("/:id", protect, deleteUser);
 
 export default routes;
