@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { PlusCircle, ListTodo, Map, AlertOctagon, UserCheck, Truck, Loader, Calendar, FileText, Send } from 'lucide-react';
 
-function DispatcherDashboard({ user, showToast }) {
+function DispatcherDashboard({ user, showToast, onLogout }) {
   const [activeTab, setActiveTab] = useState('dispatch'); // 'dispatch', 'orders', 'tracking', 'incidents'
-  
+
   // Data lists
   const [orders, setOrders] = useState([]);
   const [drivers, setDrivers] = useState([]);
@@ -15,6 +15,7 @@ function DispatcherDashboard({ user, showToast }) {
 
   // New Order Form state
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [selectedOrderDetail, setSelectedOrderDetail] = useState(null);
   const [newOrder, setNewOrder] = useState({
     order_code: '',
     sender_name: '',
@@ -116,7 +117,7 @@ function DispatcherDashboard({ user, showToast }) {
   const handleCreateOrder = async (e) => {
     e.preventDefault();
     const orderCodeStr = newOrder.order_code || `ORD-${Date.now().toString().slice(-6)}`;
-    
+
     try {
       const response = await fetch('/api/orders', {
         method: 'POST',
@@ -177,7 +178,7 @@ function DispatcherDashboard({ user, showToast }) {
     }
 
     setDispatching(true);
-    
+
     // Lấy thông tin tọa độ từ đơn hàng để gán vào lộ trình route_points
     const orderObj = orders.find(o => o._id === selectedOrder);
     const pickupAddress = orderObj?.pickup_address || '';
@@ -252,7 +253,7 @@ function DispatcherDashboard({ user, showToast }) {
 
   return (
     <div style={{ padding: '24px', maxWidth: '1600px', margin: '0 auto', width: '100%' }}>
-      
+
       {/* Tiêu đề & Nút Tạo Đơn Hàng Nhanh */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div>
@@ -263,10 +264,15 @@ function DispatcherDashboard({ user, showToast }) {
             Chào {user.full_name}, quản lý đội xe và phân phối đơn hàng hiệu quả.
           </p>
         </div>
-        
-        <button className="btn btn-primary" onClick={() => setShowOrderModal(true)}>
-          <PlusCircle size={16} /> Tạo Đơn Hàng Mới
-        </button>
+
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button className="btn btn-primary" onClick={() => setShowOrderModal(true)}>
+            <PlusCircle size={16} /> Tạo Đơn Hàng Mới
+          </button>
+          <button className="btn btn-secondary" onClick={onLogout}>
+            Đăng xuất
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -277,9 +283,7 @@ function DispatcherDashboard({ user, showToast }) {
         <div className={`tab ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>
           <ListTodo size={14} style={{ inlineSize: '14px', marginRight: '6px' }} /> Danh Sách Đơn Hàng ({orders.length})
         </div>
-        <div className={`tab ${activeTab === 'tracking' ? 'active' : ''}`} onClick={() => setActiveTab('tracking')}>
-          <Map size={14} style={{ inlineSize: '14px', marginRight: '6px' }} /> Giám Sát GPS & Lộ Trình
-        </div>
+
         <div className={`tab ${activeTab === 'incidents' ? 'active' : ''}`} onClick={() => setActiveTab('incidents')}>
           <AlertOctagon size={14} style={{ inlineSize: '14px', marginRight: '6px' }} /> Sự Cố Khẩn Cấp ({incidents.filter(i => i.status !== 'resolved').length})
         </div>
@@ -297,7 +301,7 @@ function DispatcherDashboard({ user, showToast }) {
           {/* TAB 1: PHÂN CÔNG GIAO NHẬN */}
           {activeTab === 'dispatch' && (
             <div className="dashboard-grid" style={{ padding: 0 }}>
-              
+
               {/* Form Phân công */}
               <div className="col-4">
                 <div className="card">
@@ -305,11 +309,11 @@ function DispatcherDashboard({ user, showToast }) {
                     <Send size={18} color="var(--primary)" />
                     Tạo Phân Công Mới
                   </div>
-                  
+
                   <form onSubmit={handleDispatch} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <div className="form-group">
                       <label className="form-label">Chọn Đơn Vận Chuyển Đang Chờ</label>
-                      <select 
+                      <select
                         className="form-control"
                         value={selectedOrder}
                         onChange={(e) => setSelectedOrder(e.target.value)}
@@ -326,7 +330,7 @@ function DispatcherDashboard({ user, showToast }) {
 
                     <div className="form-group">
                       <label className="form-label">Chọn Tài Xế Sẵn Sàng</label>
-                      <select 
+                      <select
                         className="form-control"
                         value={selectedDriver}
                         onChange={(e) => setSelectedDriver(e.target.value)}
@@ -343,7 +347,7 @@ function DispatcherDashboard({ user, showToast }) {
 
                     <div className="form-group">
                       <label className="form-label">Chọn Xe Sẵn Sàng</label>
-                      <select 
+                      <select
                         className="form-control"
                         value={selectedVehicle}
                         onChange={(e) => setSelectedVehicle(e.target.value)}
@@ -360,7 +364,7 @@ function DispatcherDashboard({ user, showToast }) {
 
                     <div className="form-group">
                       <label className="form-label">Ghi chú vận chuyển (nếu có)</label>
-                      <input 
+                      <input
                         type="text"
                         className="form-control"
                         placeholder="Yêu cầu giao đúng giờ, đi đường tránh..."
@@ -383,7 +387,7 @@ function DispatcherDashboard({ user, showToast }) {
                     <Truck size={18} color="var(--success)" />
                     Danh Sách Điều Xe Đang Vận Hành ({assignments.length})
                   </div>
-                  
+
                   <div className="table-container">
                     <table className="table">
                       <thead>
@@ -410,21 +414,31 @@ function DispatcherDashboard({ user, showToast }) {
                                   Từ: {a.order_id?.pickup_address.substring(0, 20)}...
                                 </div>
                               </td>
-                              <td>{a.driver_id?.user_id?.full_name || 'N/A'}</td>
+                              <td>
+                                <div>{a.driver_id?.user_id?.full_name || 'N/A'}</div>
+                                <div style={{ fontSize: '11px', color: 'var(--info-text)', marginTop: '2px', fontWeight: '500' }}>
+                                  {a.assignment_status === 'assigned' || a.assignment_status === 'accepted' ? 'Đang chuẩn bị nhận hàng' :
+                                    a.assignment_status === 'in_progress' ? 'Đang đi giao hàng' :
+                                      a.assignment_status === 'arrived' ? 'Đã đến nơi giao' :
+                                        a.assignment_status === 'completed' ? 'Đã hoàn thành giao' :
+                                          a.assignment_status === 'rejected' ? 'Đã từ chối' : 'Chưa xuất phát'}
+                                </div>
+                              </td>
                               <td>
                                 <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{a.vehicle_id?.plate_number || 'N/A'}</span>
                               </td>
                               <td>
-                                <span className={`badge ${
-                                  a.assignment_status === 'assigned' ? 'badge-primary' :
-                                  a.assignment_status === 'accepted' ? 'badge-info' :
-                                  a.assignment_status === 'in_progress' ? 'badge-warning' :
-                                  a.assignment_status === 'completed' ? 'badge-success' : 'badge-danger'
-                                }`}>
+                                <span className={`badge ${a.assignment_status === 'assigned' ? 'badge-primary' :
+                                    a.assignment_status === 'accepted' ? 'badge-info' :
+                                      a.assignment_status === 'in_progress' ? 'badge-warning' :
+                                        a.assignment_status === 'arrived' ? 'badge-info' :
+                                          a.assignment_status === 'completed' ? 'badge-success' : 'badge-danger'
+                                  }`}>
                                   {a.assignment_status === 'assigned' ? 'Chờ nhận' :
-                                   a.assignment_status === 'accepted' ? 'Đã nhận' :
-                                   a.assignment_status === 'in_progress' ? 'Đang đi' :
-                                   a.assignment_status === 'completed' ? 'Đã giao' : 'Đã huỷ'}
+                                    a.assignment_status === 'accepted' ? 'Đã nhận' :
+                                      a.assignment_status === 'in_progress' ? 'Đang đi' :
+                                        a.assignment_status === 'arrived' ? 'Đã đến nơi' :
+                                          a.assignment_status === 'completed' ? 'Đã giao' : 'Đã huỷ'}
                                 </span>
                               </td>
                               <td style={{ fontSize: '12px' }}>
@@ -474,7 +488,12 @@ function DispatcherDashboard({ user, showToast }) {
                       </tr>
                     ) : (
                       orders.map(o => (
-                        <tr key={o._id}>
+                        <tr
+                          key={o._id}
+                          onClick={() => setSelectedOrderDetail(o)}
+                          style={{ cursor: 'pointer' }}
+                          className="hover-row"
+                        >
                           <td><strong style={{ color: '#fff' }}>#{o.order_code}</strong></td>
                           <td>
                             <div>{o.sender_name}</div>
@@ -489,24 +508,24 @@ function DispatcherDashboard({ user, showToast }) {
                             <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{o.cargo_weight} kg</div>
                           </td>
                           <td>
-                            <span className={`badge ${
-                              o.priority === 'urgent' ? 'badge-danger' : 
-                              o.priority === 'high' ? 'badge-warning' : 'badge-primary'
-                            }`}>
+                            <span className={`badge ${o.priority === 'urgent' ? 'badge-danger' :
+                                o.priority === 'high' ? 'badge-warning' : 'badge-primary'
+                              }`}>
                               {o.priority === 'urgent' ? 'Khẩn cấp' : o.priority === 'high' ? 'Cao' : 'Thường'}
                             </span>
                           </td>
                           <td>
-                            <span className={`badge ${
-                              o.status === 'pending' ? 'badge-info' :
-                              o.status === 'assigned' ? 'badge-primary' :
-                              o.status === 'in_transit' ? 'badge-warning' :
-                              o.status === 'delivered' ? 'badge-success' : 'badge-danger'
-                            }`}>
+                            <span className={`badge ${o.status === 'pending' ? 'badge-info' :
+                                o.status === 'assigned' ? 'badge-primary' :
+                                  o.status === 'in_transit' ? 'badge-warning' :
+                                    o.status === 'arrived' ? 'badge-info' :
+                                      o.status === 'delivered' ? 'badge-success' : 'badge-danger'
+                              }`}>
                               {o.status === 'pending' ? 'Chờ điều phối' :
-                               o.status === 'assigned' ? 'Đã gán xe' :
-                               o.status === 'in_transit' ? 'Đang đi giao' :
-                               o.status === 'delivered' ? 'Đã hoàn thành' : 'Đã huỷ'}
+                                o.status === 'assigned' ? 'Đã gán xe' :
+                                  o.status === 'in_transit' ? 'Đang đi giao' :
+                                    o.status === 'arrived' ? 'Đã đến nơi' :
+                                      o.status === 'delivered' ? 'Đã hoàn thành' : 'Đã huỷ'}
                             </span>
                           </td>
                         </tr>
@@ -518,133 +537,6 @@ function DispatcherDashboard({ user, showToast }) {
             </div>
           )}
 
-          {/* TAB 3: GIÁM SÁT HÀNH TRÌNH GPS */}
-          {activeTab === 'tracking' && (
-            <div className="dashboard-grid" style={{ padding: 0 }}>
-              
-              {/* Cột trái: Danh sách các xe đang chạy */}
-              <div className="col-4">
-                <div className="card">
-                  <div className="card-title">
-                    <Truck size={18} color="var(--info)" />
-                    Xe Đang Giao Hàng
-                  </div>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {assignments.filter(a => a.assignment_status === 'in_progress').length === 0 ? (
-                      <p style={{ color: 'var(--text-muted)', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>
-                        Hiện không có chuyến đi nào đang trong tiến trình giao nhận.
-                      </p>
-                    ) : (
-                      assignments.filter(a => a.assignment_status === 'in_progress').map(a => {
-                        // Tìm tọa độ GPS mới nhất của tài xế này
-                        const activeLocs = locations.filter(l => l.assignment_id && l.assignment_id._id === a._id);
-                        const latestLoc = activeLocs[0]; // Sắp xếp giảm dần nên phần tử đầu tiên là mới nhất
-
-                        return (
-                          <div 
-                            key={a._id}
-                            style={{ 
-                              padding: '12px', 
-                              borderRadius: '8px', 
-                              background: 'rgba(255,255,255,0.03)', 
-                              border: '1px solid var(--border-color)',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '6px'
-                            }}
-                          >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <strong style={{ color: '#fff', fontSize: '14px' }}>#{a.order_id?.order_code}</strong>
-                              <span className="pulse-dot"></span>
-                            </div>
-                            <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                              Tài xế: {getDriverName(a.driver_id)} ({a.vehicle_id?.plate_number})
-                            </p>
-                            {latestLoc ? (
-                              <p style={{ fontSize: '11px', color: 'var(--info-text)', fontFamily: 'monospace' }}>
-                                Tọa độ: {latestLoc.lat.toFixed(5)}, {latestLoc.lng.toFixed(5)} ({latestLoc.speed} km/h)
-                              </p>
-                            ) : (
-                              <p style={{ fontSize: '11px', color: 'var(--text-dark)' }}>
-                                Chưa cập nhật tín hiệu GPS
-                              </p>
-                            )}
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Cột phải: Bản đồ giám sát tổng hợp mô phỏng */}
-              <div className="col-8">
-                <div className="card">
-                  <div className="card-title">
-                    <Map size={18} color="var(--primary)" />
-                    Bản Đồ Vận Tải Trực Tuyến
-                  </div>
-
-                  <div className="map-simulation" style={{ height: '450px' }}>
-                    <div className="map-grid-bg"></div>
-                    
-                    {/* Vẽ các tuyến đường và vị trí xe */}
-                    {assignments.filter(a => a.assignment_status === 'in_progress').map((a, index) => {
-                      const activeLocs = locations.filter(l => l.assignment_id && l.assignment_id._id === a._id);
-                      const latestLoc = activeLocs[0];
-                      
-                      // Vẽ marker xe trên bản đồ ở các vị trí khác nhau để phân biệt
-                      const offsetLat = 21.0285 + (index * 0.005) - 0.002;
-                      const offsetLng = 105.8542 + (index * 0.005) - 0.002;
-                      
-                      const latVal = latestLoc ? latestLoc.lat : offsetLat;
-                      const lngVal = latestLoc ? latestLoc.lng : offsetLng;
-
-                      // Chuyển đổi tọa độ thành phần trăm pixel trên màn hình mô phỏng
-                      const mapX = 30 + ((lngVal - 105.85) * 800) % 60;
-                      const mapY = 70 - ((latVal - 21.02) * 800) % 60;
-
-                      return (
-                        <div key={a._id}>
-                          {/* Point A (Pickup) */}
-                          <div className="map-point pickup" style={{ left: `${mapX - 10}%`, top: `${mapY + 15}%`, fontSize: '7px' }}>
-                            A
-                          </div>
-                          
-                          {/* Point B (Delivery) */}
-                          <div className="map-point delivery" style={{ left: `${mapX + 15}%`, top: `${mapY - 15}%`, fontSize: '7px' }}>
-                            B
-                          </div>
-
-                          {/* Xe tải */}
-                          <div 
-                            className="map-car-marker" 
-                            style={{ 
-                              left: `${mapX}%`, 
-                              top: `${mapY}%`,
-                              background: index % 2 === 0 ? 'var(--primary)' : 'var(--info)'
-                            }}
-                          >
-                            <Truck size={14} className="map-car-icon" />
-                          </div>
-
-                          <div className="map-label" style={{ left: `${mapX}%`, top: `${mapY - 7}%`, transform: 'translateX(-50%)' }}>
-                            #{a.order_id?.order_code} ({getDriverName(a.driver_id)})
-                          </div>
-                        </div>
-                      );
-                    })}
-
-                    {assignments.filter(a => a.assignment_status === 'in_progress').length === 0 && (
-                      <p style={{ zIndex: 10 }}>Không có xe nào đang vận hành trên đường.</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          )}
 
           {/* TAB 4: DANH SÁCH SỰ CỐ KHẨN CẤP */}
           {activeTab === 'incidents' && (
@@ -653,7 +545,7 @@ function DispatcherDashboard({ user, showToast }) {
                 <AlertOctagon size={18} />
                 Báo Cáo Sự Cố Trên Lộ Trình Giao Hàng
               </div>
-              
+
               <div className="table-container">
                 <table className="table">
                   <thead>
@@ -682,10 +574,10 @@ function DispatcherDashboard({ user, showToast }) {
                           <td>{i.reported_by?.full_name || 'N/A'}</td>
                           <td>
                             <span className="badge badge-danger">
-                              {i.incident_type === 'traffic' ? 'Kẹt xe' : 
-                               i.incident_type === 'accident' ? 'Tai nạn' : 
-                               i.incident_type === 'vehicle_breakdown' ? 'Hỏng xe' : 
-                               i.incident_type === 'customer_issue' ? 'Khách hàng' : 'Khác'}
+                              {i.incident_type === 'traffic' ? 'Kẹt xe' :
+                                i.incident_type === 'accident' ? 'Tai nạn' :
+                                  i.incident_type === 'vehicle_breakdown' ? 'Hỏng xe' :
+                                    i.incident_type === 'customer_issue' ? 'Khách hàng' : 'Khác'}
                             </span>
                           </td>
                           <td>{i.description}</td>
@@ -693,12 +585,11 @@ function DispatcherDashboard({ user, showToast }) {
                             {new Date(i.createdAt).toLocaleString([], { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
                           </td>
                           <td>
-                            <span className={`badge ${
-                              i.status === 'resolved' ? 'badge-success' : 
-                              i.status === 'processing' ? 'badge-warning' : 'badge-danger'
-                            }`}>
-                              {i.status === 'resolved' ? 'Đã xử lý' : 
-                               i.status === 'processing' ? 'Đang xử lý' : 'Mới tiếp nhận'}
+                            <span className={`badge ${i.status === 'resolved' ? 'badge-success' :
+                                i.status === 'processing' ? 'badge-warning' : 'badge-danger'
+                              }`}>
+                              {i.status === 'resolved' ? 'Đã xử lý' :
+                                i.status === 'processing' ? 'Đang xử lý' : 'Mới tiếp nhận'}
                             </span>
                           </td>
                         </tr>
@@ -724,26 +615,26 @@ function DispatcherDashboard({ user, showToast }) {
               </h3>
               <button className="modal-close" onClick={() => setShowOrderModal(false)}>×</button>
             </div>
-            
+
             <form onSubmit={handleCreateOrder}>
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Mã Đơn Hàng (Tự động nếu để trống)</label>
-                  <input 
+                  <input
                     type="text"
                     className="form-control"
                     placeholder="Ví dụ: ORD-998"
                     value={newOrder.order_code}
-                    onChange={(e) => setNewOrder({...newOrder, order_code: e.target.value})}
+                    onChange={(e) => setNewOrder({ ...newOrder, order_code: e.target.value })}
                   />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Trọng lượng hàng (kg)</label>
-                  <input 
+                  <input
                     type="number"
                     className="form-control"
                     value={newOrder.cargo_weight}
-                    onChange={(e) => setNewOrder({...newOrder, cargo_weight: e.target.value})}
+                    onChange={(e) => setNewOrder({ ...newOrder, cargo_weight: e.target.value })}
                     required
                   />
                 </div>
@@ -752,23 +643,23 @@ function DispatcherDashboard({ user, showToast }) {
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Người Gửi (Họ tên)</label>
-                  <input 
+                  <input
                     type="text"
                     className="form-control"
                     placeholder="Nguyễn Văn Gửi"
                     value={newOrder.sender_name}
-                    onChange={(e) => setNewOrder({...newOrder, sender_name: e.target.value})}
+                    onChange={(e) => setNewOrder({ ...newOrder, sender_name: e.target.value })}
                     required
                   />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Số điện thoại gửi</label>
-                  <input 
+                  <input
                     type="tel"
                     className="form-control"
                     placeholder="09XXXXXXXX"
                     value={newOrder.sender_phone}
-                    onChange={(e) => setNewOrder({...newOrder, sender_phone: e.target.value})}
+                    onChange={(e) => setNewOrder({ ...newOrder, sender_phone: e.target.value })}
                     required
                   />
                 </div>
@@ -776,12 +667,12 @@ function DispatcherDashboard({ user, showToast }) {
 
               <div className="form-group">
                 <label className="form-label">Địa chỉ NHẬN HÀNG (Điểm đi)</label>
-                <input 
+                <input
                   type="text"
                   className="form-control"
                   placeholder="Ví dụ: Cảng ICD Gia Lâm, Hà Nội"
                   value={newOrder.pickup_address}
-                  onChange={(e) => setNewOrder({...newOrder, pickup_address: e.target.value})}
+                  onChange={(e) => setNewOrder({ ...newOrder, pickup_address: e.target.value })}
                   required
                 />
               </div>
@@ -789,23 +680,23 @@ function DispatcherDashboard({ user, showToast }) {
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Người Nhận (Họ tên)</label>
-                  <input 
+                  <input
                     type="text"
                     className="form-control"
                     placeholder="Trần Thị Nhận"
                     value={newOrder.receiver_name}
-                    onChange={(e) => setNewOrder({...newOrder, receiver_name: e.target.value})}
+                    onChange={(e) => setNewOrder({ ...newOrder, receiver_name: e.target.value })}
                     required
                   />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Số điện thoại nhận</label>
-                  <input 
+                  <input
                     type="tel"
                     className="form-control"
                     placeholder="09XXXXXXXX"
                     value={newOrder.receiver_phone}
-                    onChange={(e) => setNewOrder({...newOrder, receiver_phone: e.target.value})}
+                    onChange={(e) => setNewOrder({ ...newOrder, receiver_phone: e.target.value })}
                     required
                   />
                 </div>
@@ -813,12 +704,12 @@ function DispatcherDashboard({ user, showToast }) {
 
               <div className="form-group">
                 <label className="form-label">Địa chỉ GIAO HÀNG (Điểm đến)</label>
-                <input 
+                <input
                   type="text"
                   className="form-control"
                   placeholder="Ví dụ: KCN Bắc Thăng Long, Đông Anh, Hà Nội"
                   value={newOrder.delivery_address}
-                  onChange={(e) => setNewOrder({...newOrder, delivery_address: e.target.value})}
+                  onChange={(e) => setNewOrder({ ...newOrder, delivery_address: e.target.value })}
                   required
                 />
               </div>
@@ -826,20 +717,20 @@ function DispatcherDashboard({ user, showToast }) {
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Mô tả hàng hóa</label>
-                  <input 
+                  <input
                     type="text"
                     className="form-control"
                     placeholder="Ví dụ: Thiết bị điện tử đóng thùng gỗ"
                     value={newOrder.cargo_description}
-                    onChange={(e) => setNewOrder({...newOrder, cargo_description: e.target.value})}
+                    onChange={(e) => setNewOrder({ ...newOrder, cargo_description: e.target.value })}
                   />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Độ ưu tiên</label>
-                  <select 
+                  <select
                     className="form-control"
                     value={newOrder.priority}
-                    onChange={(e) => setNewOrder({...newOrder, priority: e.target.value})}
+                    onChange={(e) => setNewOrder({ ...newOrder, priority: e.target.value })}
                   >
                     <option value="normal">Bình thường</option>
                     <option value="high">Cao</option>
@@ -860,6 +751,142 @@ function DispatcherDashboard({ user, showToast }) {
           </div>
         </div>
       )}
+
+      {/* MODAL CHI TIẾT ĐƠN HÀNG */}
+      {selectedOrderDetail && (() => {
+        const assignment = assignments.find(a => a.order_id && a.order_id._id === selectedOrderDetail._id);
+
+        return (
+          <div className="modal-overlay" onClick={() => setSelectedOrderDetail(null)}>
+            <div className="modal-content animate-fade-in" style={{ maxWidth: '650px' }} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FileText size={18} color="var(--primary)" />
+                  Chi Tiết Đơn Hàng #{selectedOrderDetail.order_code}
+                </h3>
+                <button className="modal-close" onClick={() => setSelectedOrderDetail(null)}>×</button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* Thông tin chung */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>TRẠNG THÁI ĐƠN HÀNG</span>
+                    <div style={{ marginTop: '4px' }}>
+                      <span className={`badge ${selectedOrderDetail.status === 'pending' ? 'badge-info' :
+                          selectedOrderDetail.status === 'assigned' ? 'badge-primary' :
+                            selectedOrderDetail.status === 'in_transit' ? 'badge-warning' :
+                              selectedOrderDetail.status === 'arrived' ? 'badge-info' :
+                                selectedOrderDetail.status === 'delivered' ? 'badge-success' : 'badge-danger'
+                        }`}>
+                        {selectedOrderDetail.status === 'pending' ? 'Chờ điều phối' :
+                          selectedOrderDetail.status === 'assigned' ? 'Đã gán xe' :
+                            selectedOrderDetail.status === 'in_transit' ? 'Đang đi giao' :
+                              selectedOrderDetail.status === 'arrived' ? 'Đã đến nơi' :
+                                selectedOrderDetail.status === 'delivered' ? 'Đã hoàn thành' : 'Đã huỷ'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>ĐỘ ƯU TIÊN</span>
+                    <div style={{ marginTop: '4px' }}>
+                      <span className={`badge ${selectedOrderDetail.priority === 'urgent' ? 'badge-danger' :
+                          selectedOrderDetail.priority === 'high' ? 'badge-warning' : 'badge-primary'
+                        }`}>
+                        {selectedOrderDetail.priority === 'urgent' ? 'Khẩn cấp' : selectedOrderDetail.priority === 'high' ? 'Cao' : 'Thường'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Thông tin hàng hóa */}
+                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                  <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '6px' }}>Thông Tin Hàng Hóa</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '10px', fontSize: '13px' }}>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)' }}>Mô tả hàng hóa:</span>
+                      <p style={{ margin: '2px 0 0 0', fontWeight: 600, color: '#fff' }}>{selectedOrderDetail.cargo_description || 'Không ghi chú'}</p>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)' }}>Trọng lượng:</span>
+                      <p style={{ margin: '2px 0 0 0', fontWeight: 600, color: '#fff' }}>{selectedOrderDetail.cargo_weight} kg</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Người gửi & Người nhận */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '6px', border: '1px solid var(--border-color)', fontSize: '13px', textAlign: 'left' }}>
+                    <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '6px' }}>Thông Tin Người Gửi</h4>
+                    <p style={{ margin: '0 0 4px 0' }}><span style={{ color: 'var(--text-muted)' }}>Họ tên:</span> <strong>{selectedOrderDetail.sender_name}</strong></p>
+                    <p style={{ margin: '0 0 8px 0' }}><span style={{ color: 'var(--text-muted)' }}>SĐT:</span> <strong>{selectedOrderDetail.sender_phone}</strong></p>
+                    <p style={{ margin: 0 }}><span style={{ color: 'var(--text-muted)' }}>Địa chỉ:</span> <strong>{selectedOrderDetail.pickup_address}</strong></p>
+                  </div>
+
+                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '6px', border: '1px solid var(--border-color)', fontSize: '13px', textAlign: 'left' }}>
+                    <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '6px' }}>Thông Tin Người Nhận</h4>
+                    <p style={{ margin: '0 0 4px 0' }}><span style={{ color: 'var(--text-muted)' }}>Họ tên:</span> <strong>{selectedOrderDetail.receiver_name}</strong></p>
+                    <p style={{ margin: '0 0 8px 0' }}><span style={{ color: 'var(--text-muted)' }}>SĐT:</span> <strong>{selectedOrderDetail.receiver_phone}</strong></p>
+                    <p style={{ margin: 0 }}><span style={{ color: 'var(--text-muted)' }}>Địa chỉ:</span> <strong>{selectedOrderDetail.delivery_address}</strong></p>
+                  </div>
+                </div>
+
+                {/* Thông tin phân công tài xế & phương tiện */}
+                {assignment ? (
+                  <div style={{ background: 'rgba(129, 140, 248, 0.05)', padding: '16px', borderRadius: '6px', border: '1px solid rgba(129, 140, 248, 0.2)', fontSize: '13px', textAlign: 'left' }}>
+                    <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: 'var(--primary-text)', borderBottom: '1px solid rgba(129, 140, 248, 0.1)', paddingBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Truck size={16} /> Thông Tin Vận Chuyển
+                    </h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div>
+                        <p style={{ margin: '0 0 4px 0' }}><span style={{ color: 'var(--text-muted)' }}>Tài xế:</span> <strong>{assignment.driver_id?.user_id?.full_name || 'N/A'}</strong></p>
+                        <p style={{ margin: '0 0 4px 0' }}><span style={{ color: 'var(--text-muted)' }}>Số điện thoại:</span> <strong>{assignment.driver_id?.user_id?.phone || 'N/A'}</strong></p>
+                        <p style={{ margin: 0 }}><span style={{ color: 'var(--text-muted)' }}>Bằng lái:</span> <strong>{assignment.driver_id?.license_type || 'N/A'} (Kinh nghiệm {assignment.driver_id?.experience_years} năm)</strong></p>
+                      </div>
+                      <div>
+                        <p style={{ margin: '0 0 4px 0' }}><span style={{ color: 'var(--text-muted)' }}>Phương tiện:</span> <strong>{assignment.vehicle_id?.plate_number || 'N/A'}</strong></p>
+                        <p style={{ margin: '0 0 4px 0' }}><span style={{ color: 'var(--text-muted)' }}>Loại xe:</span> <strong>{assignment.vehicle_id?.vehicle_type === 'truck' ? 'Xe tải' : assignment.vehicle_id?.vehicle_type === 'van' ? 'Xe Van' : assignment.vehicle_id?.vehicle_type || 'N/A'}</strong></p>
+                        <p style={{ margin: 0 }}><span style={{ color: 'var(--text-muted)' }}>Người điều phối:</span> <strong>{assignment.dispatcher_id?.full_name || 'N/A'}</strong></p>
+                      </div>
+                    </div>
+                    <div style={{ marginTop: '12px', padding: '10px', borderRadius: '6px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>Vị trí hiện tại:</span>{' '}
+                      <strong style={{ color: 'var(--info-text)' }}>
+                        {assignment.assignment_status === 'assigned' || assignment.assignment_status === 'accepted' ? 'Đang chuẩn bị nhận hàng tại: ' + (selectedOrderDetail.pickup_address || 'Điểm đi') :
+                          assignment.assignment_status === 'in_progress' ? 'Đang di chuyển trên đường giao hàng' :
+                            assignment.assignment_status === 'arrived' ? 'Đã đến điểm giao tại: ' + (selectedOrderDetail.delivery_address || 'Điểm đến') :
+                              assignment.assignment_status === 'completed' ? 'Đã giao hàng thành công' :
+                                assignment.assignment_status === 'rejected' ? 'Đã từ chối' : 'Chưa xuất phát'}
+                      </strong>
+                    </div>
+                    {assignment.note && (
+                      <p style={{ margin: '10px 0 0 0', padding: '6px 10px', borderRadius: '4px', background: 'rgba(0,0,0,0.15)', color: 'var(--warning-text)' }}>
+                        <strong>Ghi chú:</strong> {assignment.note}
+                      </p>
+                    )}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '12px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.05)', fontSize: '11px', color: 'var(--text-muted)' }}>
+                      <span>Phân công lúc: {new Date(assignment.assigned_at).toLocaleString('vi-VN')}</span>
+                      {assignment.start_time && <span>Bắt đầu lúc: {new Date(assignment.start_time).toLocaleString('vi-VN')}</span>}
+                      {assignment.end_time && <span>Kết thúc lúc: {new Date(assignment.end_time).toLocaleString('vi-VN')}</span>}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ background: 'rgba(239, 68, 68, 0.05)', padding: '16px', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.1)', fontSize: '13px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    Đơn hàng này chưa được phân công tài xế và phương tiện.
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+                <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setSelectedOrderDetail(null)}>
+                  Đóng
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );

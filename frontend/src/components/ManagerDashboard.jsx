@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { BarChart3, ShieldAlert, Truck, Users, PlusCircle, Wrench, Settings, Trash2, CheckCircle, Clock, Loader, Star } from 'lucide-react';
 
-function ManagerDashboard({ user, showToast }) {
+function ManagerDashboard({ user, showToast, onLogout }) {
   const [activeTab, setActiveTab] = useState('analytics'); // 'analytics', 'fleet', 'incidents'
-  
+
   // Data State
   const [orders, setOrders] = useState([]);
   const [vehicles, setVehicles] = useState([]);
@@ -69,7 +69,7 @@ function ManagerDashboard({ user, showToast }) {
         body: JSON.stringify(newVehicle)
       });
       const result = await response.json();
-      
+
       if (result.success) {
         showToast(`Đã thêm xe ${newVehicle.plate_number} vào đội xe thành công!`, 'success');
         setShowVehicleModal(false);
@@ -152,21 +152,21 @@ function ManagerDashboard({ user, showToast }) {
   const completedOrdersCount = orders.filter(o => o.status === 'delivered').length;
   const inTransitCount = orders.filter(o => o.status === 'in_transit').length;
   const pendingCount = orders.filter(o => o.status === 'pending').length;
-  
+
   const inUseVehiclesCount = vehicles.filter(v => v.status === 'in_use').length;
   const maintenanceVehiclesCount = vehicles.filter(v => v.status === 'maintenance').length;
   const availableVehiclesCount = vehicles.filter(v => v.status === 'available').length;
-  
+
   const activeDriversCount = drivers.filter(d => d.current_status !== 'off').length;
-  
+
   // Tỷ lệ công suất sử dụng xe (%)
-  const vehicleUtilizationRate = vehicles.length > 0 
-    ? Math.round((inUseVehiclesCount / vehicles.length) * 100) 
+  const vehicleUtilizationRate = vehicles.length > 0
+    ? Math.round((inUseVehiclesCount / vehicles.length) * 100)
     : 0;
 
   return (
     <div style={{ padding: '24px', maxWidth: '1600px', margin: '0 auto', width: '100%' }}>
-      
+
       {/* Tiêu đề & Quản lý */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div>
@@ -177,6 +177,9 @@ function ManagerDashboard({ user, showToast }) {
             Xem báo cáo tổng hợp và điều hành hoạt động của doanh nghiệp vận tải.
           </p>
         </div>
+        <button className="btn btn-secondary" onClick={onLogout}>
+          Đăng xuất
+        </button>
       </div>
 
       {/* Tabs */}
@@ -204,7 +207,7 @@ function ManagerDashboard({ user, showToast }) {
           {/* TAB 1: THỐNG KÊ DOANH NGHIỆP */}
           {activeTab === 'analytics' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              
+
               {/* Thẻ số liệu chính */}
               <div className="stats-container">
                 <div className="stat-card">
@@ -248,11 +251,11 @@ function ManagerDashboard({ user, showToast }) {
                       <Truck size={18} color="var(--primary)" />
                       Tình Trạng Sử Dụng Đội Xe ({vehicleUtilizationRate}% Công Suất)
                     </div>
-                    
+
                     <div style={{ height: '14px', width: '100%', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '9999px', overflow: 'hidden', display: 'flex', marginTop: '10px', marginBottom: '20px' }}>
-                      <div style={{ width: `${(inUseVehiclesCount/vehicles.length)*100}%`, backgroundColor: 'var(--primary)' }}></div>
-                      <div style={{ width: `${(availableVehiclesCount/vehicles.length)*100}%`, backgroundColor: 'var(--success)' }}></div>
-                      <div style={{ width: `${(maintenanceVehiclesCount/vehicles.length)*100}%`, backgroundColor: 'var(--danger)' }}></div>
+                      <div style={{ width: `${(inUseVehiclesCount / vehicles.length) * 100}%`, backgroundColor: 'var(--primary)' }}></div>
+                      <div style={{ width: `${(availableVehiclesCount / vehicles.length) * 100}%`, backgroundColor: 'var(--success)' }}></div>
+                      <div style={{ width: `${(maintenanceVehiclesCount / vehicles.length) * 100}%`, backgroundColor: 'var(--danger)' }}></div>
                     </div>
 
                     <div className="list-detail">
@@ -313,12 +316,11 @@ function ManagerDashboard({ user, showToast }) {
                                   </span>
                                 </td>
                                 <td>
-                                  <span className={`badge ${
-                                    d.current_status === 'available' ? 'badge-success' :
-                                    d.current_status === 'off' ? 'badge-danger' : 'badge-warning'
-                                  }`}>
+                                  <span className={`badge ${d.current_status === 'available' ? 'badge-success' :
+                                      d.current_status === 'off' ? 'badge-danger' : 'badge-warning'
+                                    }`}>
                                     {d.current_status === 'available' ? 'Rảnh' :
-                                     d.current_status === 'off' ? 'Nghỉ' : 'Đang chạy'}
+                                      d.current_status === 'off' ? 'Nghỉ' : 'Đang chạy'}
                                   </span>
                                 </td>
                               </tr>
@@ -370,24 +372,23 @@ function ManagerDashboard({ user, showToast }) {
                               </strong>
                             </td>
                             <td style={{ textTransform: 'capitalize' }}>
-                              {v.vehicle_type === 'truck' ? 'Xe tải' : 
-                               v.vehicle_type === 'van' ? 'Xe Van' : 
-                               v.vehicle_type === 'motorbike' ? 'Xe máy' : 'Container'}
+                              {v.vehicle_type === 'truck' ? 'Xe tải' :
+                                v.vehicle_type === 'van' ? 'Xe Van' :
+                                  v.vehicle_type === 'motorbike' ? 'Xe máy' : 'Container'}
                             </td>
                             <td>{v.capacity} kg</td>
                             <td>📍 {v.current_location || 'Trung tâm bãi xe'}</td>
                             <td>
-                              <span className={`badge ${
-                                v.status === 'available' ? 'badge-success' :
-                                v.status === 'in_use' ? 'badge-primary' : 'badge-danger'
-                              }`}>
+                              <span className={`badge ${v.status === 'available' ? 'badge-success' :
+                                  v.status === 'in_use' ? 'badge-primary' : 'badge-danger'
+                                }`}>
                                 {v.status === 'available' ? 'Có sẵn' :
-                                 v.status === 'in_use' ? 'Đang chạy đơn' : 'Bảo trì'}
+                                  v.status === 'in_use' ? 'Đang chạy đơn' : 'Bảo trì'}
                               </span>
                             </td>
                             <td>
                               <div style={{ display: 'flex', gap: '8px' }}>
-                                <button 
+                                <button
                                   className="btn btn-secondary btn-sm"
                                   onClick={() => handleUpdateVehicleStatus(v._id, v.status)}
                                   disabled={v.status === 'in_use'}
@@ -396,7 +397,7 @@ function ManagerDashboard({ user, showToast }) {
                                   <Wrench size={12} />
                                   {v.status === 'maintenance' ? 'Đưa vào bãi' : 'Bảo dưỡng'}
                                 </button>
-                                <button 
+                                <button
                                   className="btn btn-danger btn-sm"
                                   onClick={() => handleDeleteVehicle(v._id, v.plate_number)}
                                   disabled={v.status === 'in_use'}
@@ -448,10 +449,10 @@ function ManagerDashboard({ user, showToast }) {
                           <td>{i.reported_by?.full_name || 'N/A'}</td>
                           <td>
                             <span className="badge badge-danger">
-                              {i.incident_type === 'traffic' ? 'Kẹt xe' : 
-                               i.incident_type === 'accident' ? 'Tai nạn' : 
-                               i.incident_type === 'vehicle_breakdown' ? 'Hỏng xe' : 
-                               i.incident_type === 'customer_issue' ? 'Khách hàng' : 'Khác'}
+                              {i.incident_type === 'traffic' ? 'Kẹt xe' :
+                                i.incident_type === 'accident' ? 'Tai nạn' :
+                                  i.incident_type === 'vehicle_breakdown' ? 'Hỏng xe' :
+                                    i.incident_type === 'customer_issue' ? 'Khách hàng' : 'Khác'}
                             </span>
                           </td>
                           <td>{i.description}</td>
@@ -459,15 +460,14 @@ function ManagerDashboard({ user, showToast }) {
                             {new Date(i.createdAt).toLocaleString([], { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
                           </td>
                           <td>
-                            <span className={`badge ${
-                              i.status === 'resolved' ? 'badge-success' : 'badge-danger'
-                            }`}>
+                            <span className={`badge ${i.status === 'resolved' ? 'badge-success' : 'badge-danger'
+                              }`}>
                               {i.status === 'resolved' ? 'Đã giải quyết' : 'Đang xử lý'}
                             </span>
                           </td>
                           <td>
                             {i.status !== 'resolved' ? (
-                              <button 
+                              <button
                                 className="btn btn-success btn-sm"
                                 onClick={() => handleResolveIncident(i._id)}
                                 style={{ gap: '4px' }}
@@ -503,16 +503,16 @@ function ManagerDashboard({ user, showToast }) {
               </h3>
               <button className="modal-close" onClick={() => setShowVehicleModal(false)}>×</button>
             </div>
-            
+
             <form onSubmit={handleCreateVehicle}>
               <div className="form-group">
                 <label className="form-label">Biển số xe</label>
-                <input 
+                <input
                   type="text"
                   className="form-control"
                   placeholder="Ví dụ: 29C-999.99"
                   value={newVehicle.plate_number}
-                  onChange={(e) => setNewVehicle({...newVehicle, plate_number: e.target.value})}
+                  onChange={(e) => setNewVehicle({ ...newVehicle, plate_number: e.target.value })}
                   required
                 />
               </div>
@@ -520,10 +520,10 @@ function ManagerDashboard({ user, showToast }) {
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Loại xe</label>
-                  <select 
+                  <select
                     className="form-control"
                     value={newVehicle.vehicle_type}
-                    onChange={(e) => setNewVehicle({...newVehicle, vehicle_type: e.target.value})}
+                    onChange={(e) => setNewVehicle({ ...newVehicle, vehicle_type: e.target.value })}
                   >
                     <option value="truck">Xe tải</option>
                     <option value="van">Xe Van</option>
@@ -533,11 +533,11 @@ function ManagerDashboard({ user, showToast }) {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Tải trọng chứa tối đa (kg)</label>
-                  <input 
+                  <input
                     type="number"
                     className="form-control"
                     value={newVehicle.capacity}
-                    onChange={(e) => setNewVehicle({...newVehicle, capacity: parseFloat(e.target.value)})}
+                    onChange={(e) => setNewVehicle({ ...newVehicle, capacity: parseFloat(e.target.value) })}
                     required
                   />
                 </div>
@@ -545,11 +545,11 @@ function ManagerDashboard({ user, showToast }) {
 
               <div className="form-group">
                 <label className="form-label">Địa điểm hiện tại</label>
-                <input 
+                <input
                   type="text"
                   className="form-control"
                   value={newVehicle.current_location}
-                  onChange={(e) => setNewVehicle({...newVehicle, current_location: e.target.value})}
+                  onChange={(e) => setNewVehicle({ ...newVehicle, current_location: e.target.value })}
                 />
               </div>
 

@@ -201,6 +201,12 @@ export const updateAssignmentStatus = async (req, res) => {
       });
     }
 
+    if (assignment_status === "arrived") {
+      await Order.findByIdAndUpdate(assignment.order_id, {
+        status: "arrived",
+      });
+    }
+
     if (assignment_status === "completed") {
       assignment.end_time = new Date();
 
@@ -220,6 +226,20 @@ export const updateAssignmentStatus = async (req, res) => {
     if (assignment_status === "cancelled") {
       await Order.findByIdAndUpdate(assignment.order_id, {
         status: "cancelled",
+      });
+
+      await Driver.findByIdAndUpdate(assignment.driver_id, {
+        current_status: "available",
+      });
+
+      await Vehicle.findByIdAndUpdate(assignment.vehicle_id, {
+        status: "available",
+      });
+    }
+
+    if (assignment_status === "rejected") {
+      await Order.findByIdAndUpdate(assignment.order_id, {
+        status: "pending",
       });
 
       await Driver.findByIdAndUpdate(assignment.driver_id, {

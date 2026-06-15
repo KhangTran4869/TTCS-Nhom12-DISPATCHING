@@ -9,11 +9,13 @@ import orderRoutes from "./routes/orderRouters.js";
 import dispatchAssignmentRoutes from "./routes/dispatchAssignmentRouters.js";
 import driverLocationRoutes from "./routes/driverLocationRouters.js";
 import incidentRoutes from "./routes/incidentRouters.js";
+import authRoutes from "./routes/authRouters.js";
 
 dotenv.config();
 const PORT = process.env.PORT || 5000;
 const app = express();
 app.use(express.json());
+app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/drivers", driverRoutes);
 app.use("/api/vehicles", vehicleRoutes);

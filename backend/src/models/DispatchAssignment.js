@@ -61,6 +61,7 @@ const dispatchAssignmentSchema = new mongoose.Schema(
         "accepted",
         "rejected",
         "in_progress",
+        "arrived",
         "completed",
         "cancelled",
       ],

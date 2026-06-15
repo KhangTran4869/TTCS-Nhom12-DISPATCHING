@@ -1,8 +1,32 @@
 import User from "../models/User.js";
+import Driver from "../models/Driver.js";
+import bcrypt from "bcrypt";
 
 export const createUser = async (req, res) => {
   try {
+    const { password_hash, role } = req.body;
+
+    // Hash password if provided, otherwise default to 123456
+    if (password_hash) {
+      const salt = await bcrypt.genSalt(10);
+      req.body.password_hash = await bcrypt.hash(password_hash, salt);
+    } else {
+      const salt = await bcrypt.genSalt(10);
+      req.body.password_hash = await bcrypt.hash("123456", salt);
+    }
+
     const user = await User.create(req.body);
+
+    // If role is driver, automatically create a Driver record
+    if (user.role === "driver") {
+      await Driver.create({
+        user_id: user._id,
+        license_number: `GPLX-${Math.floor(100000000000 + Math.random() * 900000000000)}`,
+        license_type: "B2",
+        experience_years: 1,
+        current_status: "available",
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -63,6 +87,14 @@ export const getUserById = async (req, res) => {
 
 export const updateUser = async (req, res) => {
   try {
+    const { password_hash } = req.body;
+
+    // Hash password if updated
+    if (password_hash) {
+      const salt = await bcrypt.genSalt(10);
+      req.body.password_hash = await bcrypt.hash(password_hash, salt);
+    }
+
     const user = await User.findByIdAndUpdate(
       req.params.id,
       req.body,
@@ -77,6 +109,20 @@ export const updateUser = async (req, res) => {
         success: false,
         message: "Không tìm thấy người dùng",
       });
+    }
+
+    // If role is updated to driver, make sure a Driver record exists
+    if (user.role === "driver") {
+      const existingDriver = await Driver.findOne({ user_id: user._id });
+      if (!existingDriver) {
+        await Driver.create({
+          user_id: user._id,
+          license_number: `GPLX-${Math.floor(100000000000 + Math.random() * 900000000000)}`,
+          license_type: "B2",
+          experience_years: 1,
+          current_status: "available",
+        });
+      }
     }
 
     res.status(200).json({
@@ -102,6 +148,11 @@ export const deleteUser = async (req, res) => {
         success: false,
         message: "Không tìm thấy người dùng",
       });
+    }
+
+    // Delete corresponding driver record if it exists
+    if (user.role === "driver") {
+      await Driver.findOneAndDelete({ user_id: user._id });
     }
 
     res.status(200).json({

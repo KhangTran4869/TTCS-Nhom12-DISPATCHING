@@ -51,7 +51,6 @@ function App() {
     setCurrentUser(null);
     localStorage.removeItem('dispatching_user');
     setAuthView('login');
-    showToast('Đã đăng xuất thành công', 'info');
   };
 
   // Handle register success — switch to login
@@ -91,9 +90,6 @@ function App() {
         <div className="toast-container">
           {toasts.map((toast) => (
             <div key={toast.id} className={`toast ${toast.type}`}>
-              <span>
-                {toast.type === 'success' ? '✅' : toast.type === 'warning' ? '⚠️' : toast.type === 'danger' ? '❌' : 'ℹ️'}
-              </span>
               <div>{toast.message}</div>
             </div>
           ))}
@@ -134,9 +130,6 @@ function App() {
       <div className="toast-container">
         {toasts.map((toast) => (
           <div key={toast.id} className={`toast ${toast.type}`}>
-            <span>
-              {toast.type === 'success' ? '✅' : toast.type === 'warning' ? '⚠️' : toast.type === 'danger' ? '❌' : 'ℹ️'}
-            </span>
             <div>{toast.message}</div>
           </div>
         ))}

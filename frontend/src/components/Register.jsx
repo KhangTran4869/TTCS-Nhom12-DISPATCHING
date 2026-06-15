@@ -6,6 +6,7 @@ function Register({ onRegisterSuccess, onSwitchToLogin, showToast }) {
     full_name: '',
     email: '',
     phone: '',
+    role: 'driver',
     password: '',
     confirmPassword: '',
   });
@@ -55,6 +56,7 @@ function Register({ onRegisterSuccess, onSwitchToLogin, showToast }) {
           full_name: formData.full_name.trim(),
           email: formData.email.trim().toLowerCase(),
           phone: formData.phone.trim(),
+          role: formData.role,
           password: formData.password,
         }),
       });
@@ -143,6 +145,32 @@ function Register({ onRegisterSuccess, onSwitchToLogin, showToast }) {
                 onChange={(e) => handleChange('phone', e.target.value)}
                 autoComplete="tel"
               />
+            </div>
+          </div>
+
+          <div className="auth-input-group">
+            <label className="auth-label">Vai trò tài khoản</label>
+            <div className="auth-input-wrapper">
+              <span className="auth-input-icon">
+                <Shield size={18} />
+              </span>
+              <select
+                id="register-role"
+                className="auth-input"
+                value={formData.role}
+                onChange={(e) => handleChange('role', e.target.value)}
+                style={{
+                  paddingRight: '36px',
+                  cursor: 'pointer',
+                  background: 'rgba(0, 0, 0, 0.25)',
+                  color: 'var(--text-main)',
+                }}
+              >
+                <option value="driver" style={{ background: '#111827', color: '#fff' }}>Tài xế (Driver)</option>
+                <option value="dispatcher" style={{ background: '#111827', color: '#fff' }}>Điều phối viên (Dispatcher)</option>
+                <option value="manager" style={{ background: '#111827', color: '#fff' }}>Quản lý (Manager)</option>
+                <option value="admin" style={{ background: '#111827', color: '#fff' }}>Quản trị viên (Admin)</option>
+              </select>
             </div>
           </div>
 

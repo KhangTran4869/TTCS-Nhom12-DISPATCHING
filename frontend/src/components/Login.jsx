@@ -24,7 +24,6 @@ function Login({ onLogin, onSwitchToRegister, showToast }) {
       const result = await response.json();
 
       if (result.success && result.data) {
-        showToast(`Chào mừng ${result.data.full_name}!`, 'success');
         onLogin(result.data);
       } else {
         showToast(result.message || 'Email hoặc mật khẩu không đúng', 'danger');
