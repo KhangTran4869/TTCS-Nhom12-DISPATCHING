@@ -177,18 +177,6 @@ function App() {
           <ManagerDashboard user={currentUser} showToast={showToast} onLogout={dummyLogout} />
         )}
       </main>
-
-      {/* Toast Alert Notifications */}
-      <div className="toast-container">
-        {toasts.map((toast) => (
-          <div key={toast.id} className={`toast ${toast.type}`}>
-            <span>
-              {toast.type === 'success' ? '✅' : toast.type === 'warning' ? '⚠️' : toast.type === 'danger' ? '❌' : 'ℹ️'}
-            </span>
-            <div>{toast.message}</div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
