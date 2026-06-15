@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Shield, Mail, Lock, Loader } from 'lucide-react';
+import { Shield, Mail, Lock, Loader, Eye, EyeOff, LogIn } from 'lucide-react';
 
-function Login({ onLogin, showToast }) {
+function Login({ onLogin, onSwitchToRegister, showToast }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Handle manual login
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
@@ -16,81 +16,122 @@ function Login({ onLogin, showToast }) {
 
     setIsSubmitting(true);
     try {
-      // Vì backend không có API login riêng, ta sẽ giả lập đăng nhập bằng cách tìm user phù hợp từ danh sách
-      const response = await fetch('/api/users');
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
       const result = await response.json();
-      
-      if (result.success) {
-        const foundUser = result.data.find(
-          (u) => u.email.toLowerCase() === email.toLowerCase()
-        );
-        
-        if (foundUser) {
-          // Thành công
-          onLogin(foundUser);
-        } else {
-          showToast('Tài khoản không tồn tại trong hệ thống', 'danger');
-        }
+
+      if (result.success && result.data) {
+        showToast(`Chào mừng ${result.data.full_name}!`, 'success');
+        onLogin(result.data);
       } else {
-        showToast('Không thể đăng nhập', 'danger');
+        showToast(result.message || 'Email hoặc mật khẩu không đúng', 'danger');
       }
     } catch (error) {
-      showToast('Lỗi hệ thống khi đăng nhập', 'danger');
+      showToast('Không thể kết nối đến máy chủ. Vui lòng kiểm tra backend.', 'danger');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="login-container">
-      <div className="card login-card animate-fade-in">
-        <div className="login-header">
-          <div className="login-logo">
-            <Shield />
+    <div className="auth-page">
+      {/* Decorative background orbs */}
+      <div className="auth-bg-orb auth-bg-orb-1"></div>
+      <div className="auth-bg-orb auth-bg-orb-2"></div>
+      <div className="auth-bg-orb auth-bg-orb-3"></div>
+
+      <div className="auth-card animate-fade-in">
+        {/* Header */}
+        <div className="auth-header">
+          <div className="auth-logo">
+            <Shield size={32} />
           </div>
-          <h2 className="login-title">Hệ Thống Điều Phối</h2>
-          <p className="login-subtitle">Đăng nhập tài khoản điều hành và vận chuyển</p>
+          <h1 className="auth-title">Hệ Thống Điều Phối</h1>
+          <p className="auth-subtitle">Đăng nhập để truy cập bảng điều khiển vận tải</p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div className="form-group">
-            <label className="form-label">Email</label>
-            <div style={{ position: 'relative' }}>
-              <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
-                <Mail size={16} />
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="auth-input-group">
+            <label className="auth-label">Email</label>
+            <div className="auth-input-wrapper">
+              <span className="auth-input-icon">
+                <Mail size={18} />
               </span>
               <input
+                id="login-email"
                 type="email"
-                className="form-control"
-                placeholder="ten@example.com"
+                className="auth-input"
+                placeholder="yourname@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                style={{ paddingLeft: '38px', width: '100%' }}
+                autoComplete="email"
               />
             </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Mật khẩu</label>
-            <div style={{ position: 'relative' }}>
-              <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
-                <Lock size={16} />
+          <div className="auth-input-group">
+            <label className="auth-label">Mật khẩu</label>
+            <div className="auth-input-wrapper">
+              <span className="auth-input-icon">
+                <Lock size={18} />
               </span>
               <input
-                type="password"
-                className="form-control"
+                id="login-password"
+                type={showPassword ? 'text' : 'password'}
+                className="auth-input"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                style={{ paddingLeft: '38px', width: '100%' }}
+                autoComplete="current-password"
               />
+              <button
+                type="button"
+                className="auth-toggle-password"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
 
-          <button type="submit" className="btn btn-primary" disabled={isSubmitting} style={{ width: '100%' }}>
-            {isSubmitting ? <Loader className="animate-spin" size={16} /> : 'Đăng Nhập'}
+          <button
+            id="login-submit"
+            type="submit"
+            className="auth-submit-btn"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader size={18} className="animate-spin" />
+                Đang xử lý...
+              </>
+            ) : (
+              <>
+                <LogIn size={18} />
+                Đăng Nhập
+              </>
+            )}
           </button>
         </form>
+
+        {/* Footer */}
+        <div className="auth-footer">
+          <p>
+            Chưa có tài khoản?{' '}
+            <button
+              type="button"
+              className="auth-link"
+              onClick={onSwitchToRegister}
+            >
+              Đăng ký ngay
+            </button>
+          </p>
+        </div>
       </div>
     </div>
   );
