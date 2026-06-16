@@ -25,16 +25,14 @@ function DriverDashboard({ user, showToast, onLogout }) {
   const [incidentDesc, setIncidentDesc] = useState("");
   const [reportingIncident, setReportingIncident] = useState(false);
 
-  // GPS Simulation state
-  const [tripProgress, setTripProgress] = useState(0); // 0 to 100%
-  const [simulatedCoords, setSimulatedCoords] = useState({
-    lat: 21.0285,
-    lng: 105.8542,
-  }); // Default Hanoi
+  // Delivery History state
+  const [deliveryHistory, setDeliveryHistory] = useState([]);
+
+
 
   // Fetch driver profile and current active assignment
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       // 1. Tìm hồ sơ Driver tương ứng với user_id của người đang đăng nhập
       const driversRes = await fetch("/api/drivers");
@@ -58,20 +56,24 @@ function DriverDashboard({ user, showToast, onLogout }) {
               (a) =>
                 a.driver_id &&
                 a.driver_id._id === foundDriver._id &&
-                ["assigned", "accepted", "in_progress"].includes(
+                ["assigned", "accepted", "in_progress", "arrived"].includes(
                   a.assignment_status,
                 ),
             );
             setActiveAssignment(active || null);
 
-            // Khôi phục progress mô phỏng dựa trên status đơn
-            if (active) {
-              if (active.assignment_status === "accepted") setTripProgress(10);
-              if (active.assignment_status === "in_progress")
-                setTripProgress(45);
-            } else {
-              setTripProgress(0);
-            }
+            // Lọc lịch sử đơn hàng của bản thân
+            const history = assignmentsResult.data.filter(
+              (a) =>
+                a.driver_id &&
+                a.driver_id._id === foundDriver._id &&
+                ["completed", "cancelled", "rejected"].includes(
+                  a.assignment_status,
+                ),
+            );
+            setDeliveryHistory(history);
+
+
           }
         } else {
           showToast(
@@ -84,7 +86,7 @@ function DriverDashboard({ user, showToast, onLogout }) {
       console.error(error);
       showToast("Lỗi khi tải thông tin tài xế", "danger");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -211,23 +213,23 @@ function DriverDashboard({ user, showToast, onLogout }) {
         }
 
         setActiveAssignment(null);
-        setTripProgress(0);
-        await fetchData();
-
+        await fetchData(true);
         return;
       }
 
-      showToast(
-        `Cập nhật trạng thái chuyến đi: ${status.toUpperCase()}`,
-        "success",
-      );
+      if (status === "accepted") {
+        showToast("Đã chấp nhận đơn hàng", "success");
+      } else if (status === "arrived") {
+        showToast("Đã đến điểm giao hàng thành công", "success");
+      } else if (status === "completed") {
+        showToast("Đơn hàng đã được giao thành công", "success");
+      }
 
       if (status === "completed" || status === "cancelled") {
         setActiveAssignment(null);
-        setTripProgress(0);
-        await fetchData();
+        await fetchData(true);
       } else {
-        await fetchData();
+        await fetchData(true);
       }
     } catch (error) {
       console.error(error);
@@ -237,57 +239,7 @@ function DriverDashboard({ user, showToast, onLogout }) {
     }
   };
 
-  // GPS Simulation Trigger
-  const handleSimulateGPS = async () => {
-    if (!activeAssignment) return;
 
-    // Tăng tiến độ chuyến đi
-    const nextProgress = Math.min(tripProgress + 15, 100);
-    setTripProgress(nextProgress);
-
-    // Tính tọa độ nội suy giữa điểm pickup (lat, lng) và delivery (lat, lng)
-    const order = activeAssignment.order_id;
-    const startLat = order?.pickup_location?.lat || 21.0285;
-    const startLng = order?.pickup_location?.lng || 105.8542;
-    const endLat = order?.delivery_location?.lat || 21.0185;
-    const endLng = order?.delivery_location?.lng || 105.8442;
-
-    // Nội suy tuyến tính đơn giản
-    const currentLat = startLat + (endLat - startLat) * (nextProgress / 100);
-    const currentLng = startLng + (endLng - startLng) * (nextProgress / 100);
-
-    setSimulatedCoords({ lat: currentLat, lng: currentLng });
-
-    // Gửi tọa độ mới lên backend để nhân viên điều phối và quản lý theo dõi thời gian thực!
-    try {
-      await fetch("/api/driver-locations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          assignment_id: activeAssignment._id,
-          driver_id: driverProfile._id,
-          lat: currentLat,
-          lng: currentLng,
-          speed: nextProgress === 100 ? 0 : 45, // Tốc độ giả lập
-          recorded_at: new Date(),
-        }),
-      });
-
-      showToast(
-        `📍 GPS check-in thành công: (${currentLat.toFixed(5)}, ${currentLng.toFixed(5)})`,
-        "info",
-      );
-
-      if (nextProgress === 100) {
-        showToast(
-          "Bạn đã đi đến điểm giao hàng. Bạn có thể nhấn nút hoàn thành giao hàng!",
-          "success",
-        );
-      }
-    } catch (error) {
-      console.error("Không thể gửi tọa độ GPS lên backend", error);
-    }
-  };
 
   // Submit Incident Report
   const handleSubmitIncident = async (e) => {
@@ -341,15 +293,7 @@ function DriverDashboard({ user, showToast, onLogout }) {
     );
   }
 
-  // Lấy tọa độ hiển thị mô phỏng
-  const startX = 25;
-  const startY = 75;
-  const endX = 75;
-  const endY = 25;
 
-  // Vị trí ô tô di chuyển trên SVG mô phỏng
-  const carX = startX + (endX - startX) * (tripProgress / 100);
-  const carY = startY + (endY - startY) * (tripProgress / 100);
 
   return (
     <div className="dashboard-grid">
@@ -552,14 +496,18 @@ function DriverDashboard({ user, showToast, onLogout }) {
                     ? "badge-primary"
                     : activeAssignment.assignment_status === "accepted"
                       ? "badge-info"
-                      : "badge-warning"
+                      : activeAssignment.assignment_status === "in_progress"
+                        ? "badge-warning"
+                        : "badge-success"
                 }`}
               >
                 {activeAssignment.assignment_status === "assigned"
                   ? "Mới phân công"
                   : activeAssignment.assignment_status === "accepted"
                     ? "Đã chấp nhận"
-                    : "Đang thực hiện"}
+                    : activeAssignment.assignment_status === "in_progress"
+                      ? "Đang giao"
+                      : "Đã đến nơi"}
               </span>
             </div>
 
@@ -674,107 +622,7 @@ function DriverDashboard({ user, showToast, onLogout }) {
               </div>
             </div>
 
-            {/* Bản đồ hành trình mô phỏng */}
-            <div>
-              <p
-                style={{
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  color: "var(--text-muted)",
-                  marginBottom: "8px",
-                }}
-              >
-                BẢN ĐỒ LỘ TRÌNH MÔ PHỎNG
-              </p>
-              <div className="map-simulation">
-                <div className="map-grid-bg"></div>
 
-                {/* SVG Route Line */}
-                <svg
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    pointerEvents: "none",
-                  }}
-                >
-                  <line
-                    x1={`${startX}%`}
-                    y1={`${startY}%`}
-                    x2={`${endX}%`}
-                    y2={`${endY}%`}
-                    stroke="var(--primary)"
-                    strokeWidth="3"
-                    strokeDasharray="6,6"
-                    opacity="0.6"
-                  />
-                </svg>
-
-                {/* Pickup Point */}
-                <div
-                  className="map-point pickup"
-                  style={{ left: `${startX}%`, top: `${startY}%` }}
-                >
-                  A
-                </div>
-                <div
-                  className="map-label"
-                  style={{
-                    left: `${startX}%`,
-                    top: `${startY + 6}%`,
-                    transform: "translateX(-50%)",
-                  }}
-                >
-                  Nhận hàng (Kho A)
-                </div>
-
-                {/* Delivery Point */}
-                <div
-                  className="map-point delivery"
-                  style={{ left: `${endX}%`, top: `${endY}%` }}
-                >
-                  B
-                </div>
-                <div
-                  className="map-label"
-                  style={{
-                    left: `${endX}%`,
-                    top: `${endY - 7}%`,
-                    transform: "translateX(-50%)",
-                  }}
-                >
-                  Giao hàng
-                </div>
-
-                {/* Moving Vehicle Marker */}
-                {tripProgress > 0 && (
-                  <div
-                    className="map-car-marker"
-                    style={{ left: `${carX}%`, top: `${carY}%` }}
-                  >
-                    <Truck size={14} className="map-car-icon" />
-                  </div>
-                )}
-
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: "12px",
-                    right: "12px",
-                    background: "rgba(0,0,0,0.8)",
-                    padding: "6px 12px",
-                    borderRadius: "4px",
-                    border: "1px solid var(--border-color)",
-                    fontSize: "11px",
-                  }}
-                >
-                  Tọa độ GPS hiện tại: {simulatedCoords.lat.toFixed(5)},{" "}
-                  {simulatedCoords.lng.toFixed(5)}
-                </div>
-              </div>
-            </div>
 
             {/* Bảng điều khiển nút hành động */}
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
@@ -784,9 +632,9 @@ function DriverDashboard({ user, showToast, onLogout }) {
                     className="btn btn-success"
                     onClick={() => updateAssignmentStatus("accepted")}
                     disabled={updatingStatus}
-                    style={{ flex: 1 }}
+                    style={{ flex: 1, gap: "6px" }}
                   >
-                    <CheckCircle2 size={16} /> Chấp Nhận Chuyến Đi
+                    <CheckCircle2 size={16} /> Nhận Đơn Hàng
                   </button>
                   <button
                     className="btn btn-danger"
@@ -806,25 +654,37 @@ function DriverDashboard({ user, showToast, onLogout }) {
                   disabled={updatingStatus}
                   style={{ width: "100%", gap: "8px" }}
                 >
-                  <Play size={16} /> Bắt Đầu Chuyến Đi
+                  <Play size={16} /> Bắt Đầu Giao
                 </button>
               )}
 
               {activeAssignment.assignment_status === "in_progress" && (
                 <>
                   <button
-                    className="btn btn-primary"
-                    onClick={handleSimulateGPS}
-                    disabled={updatingStatus || tripProgress >= 100}
+                    className="btn btn-success"
+                    onClick={() => updateAssignmentStatus("arrived")}
+                    disabled={updatingStatus}
                     style={{ flex: 2, gap: "6px" }}
                   >
-                    Giả Lập Cập Nhật GPS ({tripProgress}%)
+                    <CheckCircle2 size={16} /> Đã Đến Nơi
                   </button>
 
                   <button
+                    className="btn btn-danger"
+                    onClick={() => setShowIncidentModal(true)}
+                    style={{ flex: 1, gap: "6px" }}
+                  >
+                    <AlertTriangle size={16} /> Báo Sự Cố
+                  </button>
+                </>
+              )}
+
+              {activeAssignment.assignment_status === "arrived" && (
+                <>
+                  <button
                     className="btn btn-success"
                     onClick={() => updateAssignmentStatus("completed")}
-                    disabled={updatingStatus || tripProgress < 100}
+                    disabled={updatingStatus}
                     style={{ flex: 1, gap: "6px" }}
                   >
                     Hoàn Thành Giao Hàng
@@ -871,6 +731,114 @@ function DriverDashboard({ user, showToast, onLogout }) {
             </p>
           </div>
         )}
+
+        {/* Lịch sử giao hàng */}
+        <div className="card animate-fade-in" style={{ marginTop: "24px" }}>
+          <div className="card-title" style={{ fontSize: "16px", fontWeight: 700 }}>
+            <CheckCircle2 size={18} color="var(--success)" />
+            Lịch Sử Giao Hàng của bạn
+          </div>
+          <div
+            style={{
+              maxHeight: "400px",
+              overflowY: "auto",
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+              marginTop: "12px",
+              paddingRight: "4px",
+            }}
+          >
+            {deliveryHistory.length === 0 ? (
+              <p
+                style={{
+                  color: "var(--text-muted)",
+                  fontSize: "13px",
+                  textAlign: "center",
+                  padding: "20px 0",
+                  margin: 0,
+                }}
+              >
+                Chưa có lịch sử giao hàng.
+              </p>
+            ) : (
+              deliveryHistory.map((a) => (
+                <div
+                  key={a._id}
+                  style={{
+                    padding: "14px",
+                    borderRadius: "8px",
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid var(--border-color)",
+                    fontSize: "13px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: "20px",
+                  }}
+                >
+                  <div style={{ flex: 1, textAlign: "left" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
+                      <strong style={{ color: "#fff", fontSize: "14px" }}>
+                        #{a.order_id?.order_code || "N/A"}
+                      </strong>
+                      <span
+                        className={`badge ${a.assignment_status === "completed"
+                            ? "badge-success"
+                            : a.assignment_status === "rejected"
+                              ? "badge-warning"
+                              : "badge-danger"
+                          }`}
+                        style={{ fontSize: "10px", padding: "2px 6px" }}
+                      >
+                        {a.assignment_status === "completed"
+                          ? "Thành công"
+                          : a.assignment_status === "rejected"
+                            ? "Từ chối"
+                            : "Đã hủy"}
+                      </span>
+                    </div>
+                    <div style={{ color: "var(--text-muted)", fontSize: "12px", marginBottom: "2px" }}>
+                      Giao đến: {a.order_id?.delivery_address || "N/A"}
+                    </div>
+                    <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                      Nặng: {a.order_id?.cargo_weight || 0} kg
+                    </div>
+                  </div>
+                  <div style={{ color: "var(--text-muted)", fontSize: "12px", textAlign: "right" }}>
+                    {a.end_time ? (
+                      <div>
+                        {new Date(a.end_time).toLocaleDateString("vi-VN", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        })}
+                        <br />
+                        {new Date(a.end_time).toLocaleTimeString("vi-VN", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </div>
+                    ) : (
+                      <div>
+                        {new Date(a.updatedAt).toLocaleDateString("vi-VN", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        })}
+                        <br />
+                        {new Date(a.updatedAt).toLocaleTimeString("vi-VN", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </div>
 
       {/* MODAL BÁO CÁO SỰ CỐ */}
