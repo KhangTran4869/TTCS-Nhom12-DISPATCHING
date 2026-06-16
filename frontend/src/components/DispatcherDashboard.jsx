@@ -385,13 +385,6 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
           Danh Sách Đơn Hàng ({orders.length})
         </div>
         <div
-          className={`tab ${activeTab === "tracking" ? "active" : ""}`}
-          onClick={() => setActiveTab("tracking")}
-        >
-          <Map size={14} style={{ inlineSize: "14px", marginRight: "6px" }} />{" "}
-          Giám Sát GPS & Lộ Trình
-        </div>
-        <div
           className={`tab ${activeTab === "incidents" ? "active" : ""}`}
           onClick={() => setActiveTab("incidents")}
         >
@@ -689,7 +682,12 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
                       </tr>
                     ) : (
                       orders.map((o) => (
-                        <tr key={o._id}>
+                        <tr
+                          key={o._id}
+                          style={{ cursor: "pointer" }}
+                          onClick={() => setSelectedOrderDetail(o)}
+                          title="Bấm để xem chi tiết đơn hàng"
+                        >
                           <td>
                             <strong style={{ color: "#fff" }}>
                               #{o.order_code}
@@ -779,215 +777,7 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
             </div>
           )}
 
-          {/* TAB 3: GIÁM SÁT HÀNH TRÌNH GPS */}
-          {activeTab === "tracking" && (
-            <div className="dashboard-grid" style={{ padding: 0 }}>
-              {/* Cột trái: Danh sách các xe đang chạy */}
-              <div className="col-4">
-                <div className="card">
-                  <div className="card-title">
-                    <Truck size={18} color="var(--info)" />
-                    Xe Đang Giao Hàng
-                  </div>
 
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "12px",
-                    }}
-                  >
-                    {assignments.filter(
-                      (a) => a.assignment_status === "in_progress",
-                    ).length === 0 ? (
-                      <p
-                        style={{
-                          color: "var(--text-muted)",
-                          fontSize: "13px",
-                          textAlign: "center",
-                          padding: "20px 0",
-                        }}
-                      >
-                        Hiện không có chuyến đi nào đang trong tiến trình giao
-                        nhận.
-                      </p>
-                    ) : (
-                      assignments
-                        .filter((a) => a.assignment_status === "in_progress")
-                        .map((a) => {
-                          // Tìm tọa độ GPS mới nhất của tài xế này
-                          const activeLocs = locations.filter(
-                            (l) =>
-                              l.assignment_id && l.assignment_id._id === a._id,
-                          );
-                          const latestLoc = activeLocs[0]; // Sắp xếp giảm dần nên phần tử đầu tiên là mới nhất
-
-                          return (
-                            <div
-                              key={a._id}
-                              style={{
-                                padding: "12px",
-                                borderRadius: "8px",
-                                background: "rgba(255,255,255,0.03)",
-                                border: "1px solid var(--border-color)",
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: "6px",
-                              }}
-                            >
-                              <div
-                                style={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  alignItems: "center",
-                                }}
-                              >
-                                <strong
-                                  style={{ color: "#fff", fontSize: "14px" }}
-                                >
-                                  #{a.order_id?.order_code}
-                                </strong>
-                                <span className="pulse-dot"></span>
-                              </div>
-                              <p
-                                style={{
-                                  fontSize: "12px",
-                                  color: "var(--text-muted)",
-                                }}
-                              >
-                                Tài xế: {getDriverName(a.driver_id)} (
-                                {a.vehicle_id?.plate_number})
-                              </p>
-                              {latestLoc ? (
-                                <p
-                                  style={{
-                                    fontSize: "11px",
-                                    color: "var(--info-text)",
-                                    fontFamily: "monospace",
-                                  }}
-                                >
-                                  Tọa độ: {latestLoc.lat.toFixed(5)},{" "}
-                                  {latestLoc.lng.toFixed(5)} ({latestLoc.speed}{" "}
-                                  km/h)
-                                </p>
-                              ) : (
-                                <p
-                                  style={{
-                                    fontSize: "11px",
-                                    color: "var(--text-dark)",
-                                  }}
-                                >
-                                  Chưa cập nhật tín hiệu GPS
-                                </p>
-                              )}
-                            </div>
-                          );
-                        })
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Cột phải: Bản đồ giám sát tổng hợp mô phỏng */}
-              <div className="col-8">
-                <div className="card">
-                  <div className="card-title">
-                    <Map size={18} color="var(--primary)" />
-                    Bản Đồ Vận Tải Trực Tuyến
-                  </div>
-
-                  <div className="map-simulation" style={{ height: "450px" }}>
-                    <div className="map-grid-bg"></div>
-
-                    {/* Vẽ các tuyến đường và vị trí xe */}
-                    {assignments
-                      .filter((a) => a.assignment_status === "in_progress")
-                      .map((a, index) => {
-                        const activeLocs = locations.filter(
-                          (l) =>
-                            l.assignment_id && l.assignment_id._id === a._id,
-                        );
-                        const latestLoc = activeLocs[0];
-
-                        // Vẽ marker xe trên bản đồ ở các vị trí khác nhau để phân biệt
-                        const offsetLat = 21.0285 + index * 0.005 - 0.002;
-                        const offsetLng = 105.8542 + index * 0.005 - 0.002;
-
-                        const latVal = latestLoc ? latestLoc.lat : offsetLat;
-                        const lngVal = latestLoc ? latestLoc.lng : offsetLng;
-
-                        // Chuyển đổi tọa độ thành phần trăm pixel trên màn hình mô phỏng
-                        const mapX = 30 + (((lngVal - 105.85) * 800) % 60);
-                        const mapY = 70 - (((latVal - 21.02) * 800) % 60);
-
-                        return (
-                          <div key={a._id}>
-                            {/* Point A (Pickup) */}
-                            <div
-                              className="map-point pickup"
-                              style={{
-                                left: `${mapX - 10}%`,
-                                top: `${mapY + 15}%`,
-                                fontSize: "7px",
-                              }}
-                            >
-                              A
-                            </div>
-
-                            {/* Point B (Delivery) */}
-                            <div
-                              className="map-point delivery"
-                              style={{
-                                left: `${mapX + 15}%`,
-                                top: `${mapY - 15}%`,
-                                fontSize: "7px",
-                              }}
-                            >
-                              B
-                            </div>
-
-                            {/* Xe tải */}
-                            <div
-                              className="map-car-marker"
-                              style={{
-                                left: `${mapX}%`,
-                                top: `${mapY}%`,
-                                background:
-                                  index % 2 === 0
-                                    ? "var(--primary)"
-                                    : "var(--info)",
-                              }}
-                            >
-                              <Truck size={14} className="map-car-icon" />
-                            </div>
-
-                            <div
-                              className="map-label"
-                              style={{
-                                left: `${mapX}%`,
-                                top: `${mapY - 7}%`,
-                                transform: "translateX(-50%)",
-                              }}
-                            >
-                              #{a.order_id?.order_code} (
-                              {getDriverName(a.driver_id)})
-                            </div>
-                          </div>
-                        );
-                      })}
-
-                    {assignments.filter(
-                      (a) => a.assignment_status === "in_progress",
-                    ).length === 0 && (
-                        <p style={{ zIndex: 10 }}>
-                          Không có xe nào đang vận hành trên đường.
-                        </p>
-                      )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* TAB 4: DANH SÁCH SỰ CỐ KHẨN CẤP */}
           {activeTab === "incidents" && (
@@ -1298,6 +1088,150 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
           </div>
         </div>
       )}
+
+      {/* MODAL CHI TIẾT ĐƠN HÀNG */}
+      {selectedOrderDetail && (() => {
+        const activeAssignment = assignments.find(
+          (a) =>
+            a.order_id?._id === selectedOrderDetail._id ||
+            a.order_id === selectedOrderDetail._id
+        );
+        return (
+          <div className="modal-overlay" onClick={() => setSelectedOrderDetail(null)}>
+            <div
+              className="modal-content animate-fade-in"
+              style={{ maxWidth: "650px", width: "100%" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-header">
+                <h3
+                  className="modal-title"
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                >
+                  <FileText size={18} color="var(--primary)" />
+                  Chi Tiết Đơn Hàng #{selectedOrderDetail.order_code}
+                </h3>
+                <button
+                  className="modal-close"
+                  onClick={() => setSelectedOrderDetail(null)}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                {/* Thông tin chung: Trạng thái & Độ ưu tiên */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border-color)", paddingBottom: "12px" }}>
+                  <div>
+                    <span style={{ color: "var(--text-muted)", fontSize: "13px", marginRight: "8px" }}>Trạng thái:</span>
+                    <span
+                      className={`badge ${selectedOrderDetail.status === "pending"
+                          ? "badge-info"
+                          : selectedOrderDetail.status === "assigned"
+                            ? "badge-primary"
+                            : selectedOrderDetail.status === "in_transit"
+                              ? "badge-warning"
+                              : selectedOrderDetail.status === "delivered"
+                                ? "badge-success"
+                                : "badge-danger"
+                        }`}
+                    >
+                      {selectedOrderDetail.status === "pending"
+                        ? "Chờ điều phối"
+                        : selectedOrderDetail.status === "assigned"
+                          ? "Đã gán xe"
+                          : selectedOrderDetail.status === "in_transit"
+                            ? "Đang đi giao"
+                            : selectedOrderDetail.status === "delivered"
+                              ? "Đã hoàn thành"
+                              : "Đã huỷ"}
+                    </span>
+                  </div>
+                  <div>
+                    <span style={{ color: "var(--text-muted)", fontSize: "13px", marginRight: "8px" }}>Ưu tiên:</span>
+                    <span
+                      className={`badge ${selectedOrderDetail.priority === "urgent"
+                          ? "badge-danger"
+                          : selectedOrderDetail.priority === "high"
+                            ? "badge-warning"
+                            : "badge-primary"
+                        }`}
+                    >
+                      {selectedOrderDetail.priority === "urgent"
+                        ? "Khẩn cấp"
+                        : selectedOrderDetail.priority === "high"
+                          ? "Cao"
+                          : "Thường"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Sender & Receiver Info (2 Columns) */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                  <div style={{ background: "rgba(255,255,255,0.03)", padding: "12px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                    <h4 style={{ margin: "0 0 8px 0", color: "var(--primary)", fontSize: "14px", fontWeight: 700 }}>Thông Tin Người Gửi</h4>
+                    <p style={{ margin: "4px 0", fontSize: "13px" }}><strong style={{ color: "var(--text-muted)" }}>Tên:</strong> {selectedOrderDetail.sender_name}</p>
+                    <p style={{ margin: "4px 0", fontSize: "13px" }}><strong style={{ color: "var(--text-muted)" }}>SĐT:</strong> {selectedOrderDetail.sender_phone}</p>
+                    <p style={{ margin: "4px 0", fontSize: "13px", lineHeight: "1.4" }}><strong style={{ color: "var(--text-muted)" }}>Địa chỉ đi:</strong> {selectedOrderDetail.pickup_address}</p>
+                  </div>
+
+                  <div style={{ background: "rgba(255,255,255,0.03)", padding: "12px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                    <h4 style={{ margin: "0 0 8px 0", color: "var(--success)", fontSize: "14px", fontWeight: 700 }}>Thông Tin Người Nhận</h4>
+                    <p style={{ margin: "4px 0", fontSize: "13px" }}><strong style={{ color: "var(--text-muted)" }}>Tên:</strong> {selectedOrderDetail.receiver_name}</p>
+                    <p style={{ margin: "4px 0", fontSize: "13px" }}><strong style={{ color: "var(--text-muted)" }}>SĐT:</strong> {selectedOrderDetail.receiver_phone}</p>
+                    <p style={{ margin: "4px 0", fontSize: "13px", lineHeight: "1.4" }}><strong style={{ color: "var(--text-muted)" }}>Địa chỉ đến:</strong> {selectedOrderDetail.delivery_address}</p>
+                  </div>
+                </div>
+
+                {/* Cargo Details */}
+                <div style={{ background: "rgba(255,255,255,0.03)", padding: "12px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <h4 style={{ margin: "0 0 8px 0", color: "#fff", fontSize: "14px", fontWeight: 700 }}>Thông Tin Hàng Hóa</h4>
+                  <p style={{ margin: "4px 0", fontSize: "13px" }}><strong style={{ color: "var(--text-muted)" }}>Mô tả:</strong> {selectedOrderDetail.cargo_description || "Không có mô tả"}</p>
+                  <p style={{ margin: "4px 0", fontSize: "13px" }}><strong style={{ color: "var(--text-muted)" }}>Cân nặng:</strong> {selectedOrderDetail.cargo_weight} kg</p>
+                </div>
+
+                {/* Driver / Vehicle Assignment Details */}
+                <div style={{ background: "rgba(255,255,255,0.03)", padding: "12px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <h4 style={{ margin: "0 0 8px 0", color: "var(--warning)", fontSize: "14px", fontWeight: 700 }}>Thông Tin Vận Chuyển</h4>
+                  {activeAssignment ? (
+                    <div>
+                      <p style={{ margin: "4px 0", fontSize: "13px" }}><strong style={{ color: "var(--text-muted)" }}>Tài xế:</strong> {activeAssignment.driver_id?.user_id?.full_name || "N/A"}</p>
+                      <p style={{ margin: "4px 0", fontSize: "13px" }}><strong style={{ color: "var(--text-muted)" }}>Số điện thoại tài xế:</strong> {activeAssignment.driver_id?.user_id?.phone || "N/A"}</p>
+                      <p style={{ margin: "4px 0", fontSize: "13px" }}><strong style={{ color: "var(--text-muted)" }}>Phương tiện:</strong> {activeAssignment.vehicle_id?.plate_number || "N/A"} ({activeAssignment.vehicle_id?.vehicle_type === "truck" ? "Xe Tải" : activeAssignment.vehicle_id?.vehicle_type === "van" ? "Xe Van" : activeAssignment.vehicle_id?.vehicle_type || "N/A"})</p>
+                      <p style={{ margin: "4px 0", fontSize: "13px" }}><strong style={{ color: "var(--text-muted)" }}>Trạng thái giao:</strong> {activeAssignment.assignment_status === "assigned"
+                        ? "Chờ tài xế xác nhận"
+                        : activeAssignment.assignment_status === "accepted"
+                          ? "Tài xế đã nhận"
+                          : activeAssignment.assignment_status === "in_progress"
+                            ? "Đang đi giao hàng"
+                            : activeAssignment.assignment_status === "completed"
+                              ? "Đã giao hàng thành công"
+                              : "Đã hủy"}
+                      </p>
+                      {activeAssignment.note && (
+                        <p style={{ margin: "4px 0", fontSize: "13px" }}><strong style={{ color: "var(--text-muted)" }}>Ghi chú điều phối:</strong> {activeAssignment.note}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p style={{ margin: "4px 0", fontSize: "13px", color: "var(--text-muted)", fontStyle: "italic" }}>Đơn hàng này chưa được phân công vận chuyển.</p>
+                  )}
+                </div>
+
+                <div style={{ display: "flex", marginTop: "12px" }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ flex: 1 }}
+                    onClick={() => setSelectedOrderDetail(null)}
+                  >
+                    Đóng
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

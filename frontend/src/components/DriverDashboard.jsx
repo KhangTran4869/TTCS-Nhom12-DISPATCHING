@@ -694,107 +694,7 @@ function DriverDashboard({ user, showToast, onLogout }) {
               </div>
             </div>
 
-            {/* Bản đồ hành trình mô phỏng */}
-            <div>
-              <p
-                style={{
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  color: "var(--text-muted)",
-                  marginBottom: "8px",
-                }}
-              >
-                BẢN ĐỒ LỘ TRÌNH MÔ PHỎNG
-              </p>
-              <div className="map-simulation">
-                <div className="map-grid-bg"></div>
 
-                {/* SVG Route Line */}
-                <svg
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    pointerEvents: "none",
-                  }}
-                >
-                  <line
-                    x1={`${startX}%`}
-                    y1={`${startY}%`}
-                    x2={`${endX}%`}
-                    y2={`${endY}%`}
-                    stroke="var(--primary)"
-                    strokeWidth="3"
-                    strokeDasharray="6,6"
-                    opacity="0.6"
-                  />
-                </svg>
-
-                {/* Pickup Point */}
-                <div
-                  className="map-point pickup"
-                  style={{ left: `${startX}%`, top: `${startY}%` }}
-                >
-                  A
-                </div>
-                <div
-                  className="map-label"
-                  style={{
-                    left: `${startX}%`,
-                    top: `${startY + 6}%`,
-                    transform: "translateX(-50%)",
-                  }}
-                >
-                  Nhận hàng (Kho A)
-                </div>
-
-                {/* Delivery Point */}
-                <div
-                  className="map-point delivery"
-                  style={{ left: `${endX}%`, top: `${endY}%` }}
-                >
-                  B
-                </div>
-                <div
-                  className="map-label"
-                  style={{
-                    left: `${endX}%`,
-                    top: `${endY - 7}%`,
-                    transform: "translateX(-50%)",
-                  }}
-                >
-                  Giao hàng
-                </div>
-
-                {/* Moving Vehicle Marker */}
-                {tripProgress > 0 && (
-                  <div
-                    className="map-car-marker"
-                    style={{ left: `${carX}%`, top: `${carY}%` }}
-                  >
-                    <Truck size={14} className="map-car-icon" />
-                  </div>
-                )}
-
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: "12px",
-                    right: "12px",
-                    background: "rgba(0,0,0,0.8)",
-                    padding: "6px 12px",
-                    borderRadius: "4px",
-                    border: "1px solid var(--border-color)",
-                    fontSize: "11px",
-                  }}
-                >
-                  Tọa độ GPS hiện tại: {simulatedCoords.lat.toFixed(5)},{" "}
-                  {simulatedCoords.lng.toFixed(5)}
-                </div>
-              </div>
-            </div>
 
             {/* Bảng điều khiển nút hành động */}
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
@@ -833,18 +733,9 @@ function DriverDashboard({ user, showToast, onLogout }) {
               {activeAssignment.assignment_status === "in_progress" && (
                 <>
                   <button
-                    className="btn btn-primary"
-                    onClick={handleSimulateGPS}
-                    disabled={updatingStatus || tripProgress >= 100}
-                    style={{ flex: 2, gap: "6px" }}
-                  >
-                    <Navigation size={16} /> Mô phỏng Di chuyển (GPS: {tripProgress}%)
-                  </button>
-
-                  <button
                     className="btn btn-success"
                     onClick={() => updateAssignmentStatus("arrived")}
-                    disabled={updatingStatus || tripProgress < 100}
+                    disabled={updatingStatus}
                     style={{ flex: 2, gap: "6px" }}
                   >
                     <CheckCircle2 size={16} /> Đã Đến Nơi
