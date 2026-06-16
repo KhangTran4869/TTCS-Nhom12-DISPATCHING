@@ -593,16 +593,19 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
                               </td>
                               <td>
                                 <span
-                                  className={`badge ${a.assignment_status === "assigned"
+                                  className={`badge ${
+                                    a.assignment_status === "assigned"
                                       ? "badge-primary"
                                       : a.assignment_status === "accepted"
                                         ? "badge-info"
                                         : a.assignment_status === "in_progress"
                                           ? "badge-warning"
-                                          : a.assignment_status === "completed"
-                                            ? "badge-success"
-                                            : "badge-danger"
-                                    }`}
+                                          : a.assignment_status === "arrived"
+                                            ? "badge-warning"
+                                            : a.assignment_status === "completed"
+                                              ? "badge-success"
+                                              : "badge-danger"
+                                  }`}
                                 >
                                   {a.assignment_status === "assigned"
                                     ? "Chờ nhận"
@@ -610,32 +613,34 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
                                       ? "Đã nhận"
                                       : a.assignment_status === "in_progress"
                                         ? "Đang đi"
-                                        : a.assignment_status === "completed"
-                                          ? "Đã giao"
-                                          : "Đã huỷ"}
+                                        : a.assignment_status === "arrived"
+                                          ? "Đã đến"
+                                          : a.assignment_status === "completed"
+                                            ? "Đã giao"
+                                            : "Đã huỷ"}
                                 </span>
                               </td>
                               <td style={{ fontSize: "12px" }}>
                                 {a.start_time
                                   ? new Date(a.start_time).toLocaleTimeString(
-                                    [],
-                                    { hour: "2-digit", minute: "2-digit" },
-                                  )
+                                      [],
+                                      { hour: "2-digit", minute: "2-digit" },
+                                    )
                                   : "---"}
                               </td>
                               <td>
                                 {["assigned", "accepted"].includes(
                                   a.assignment_status,
                                 ) && (
-                                    <button
-                                      className="btn btn-danger btn-sm"
-                                      onClick={() =>
-                                        handleCancelAssignment(a._id)
-                                      }
-                                    >
-                                      Hủy
-                                    </button>
-                                  )}
+                                  <button
+                                    className="btn btn-danger btn-sm"
+                                    onClick={() =>
+                                      handleCancelAssignment(a._id)
+                                    }
+                                  >
+                                    Hủy
+                                  </button>
+                                )}
                               </td>
                             </tr>
                           ))
@@ -730,12 +735,13 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
                           </td>
                           <td>
                             <span
-                              className={`badge ${o.priority === "urgent"
+                              className={`badge ${
+                                o.priority === "urgent"
                                   ? "badge-danger"
                                   : o.priority === "high"
                                     ? "badge-warning"
                                     : "badge-primary"
-                                }`}
+                              }`}
                             >
                               {o.priority === "urgent"
                                 ? "Khẩn cấp"
@@ -746,7 +752,8 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
                           </td>
                           <td>
                             <span
-                              className={`badge ${o.status === "pending"
+                              className={`badge ${
+                                o.status === "pending"
                                   ? "badge-info"
                                   : o.status === "assigned"
                                     ? "badge-primary"
@@ -755,7 +762,7 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
                                       : o.status === "delivered"
                                         ? "badge-success"
                                         : "badge-danger"
-                                }`}
+                              }`}
                             >
                               {o.status === "pending"
                                 ? "Chờ điều phối"
@@ -776,8 +783,6 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
               </div>
             </div>
           )}
-
-
 
           {/* TAB 4: DANH SÁCH SỰ CỐ KHẨN CẤP */}
           {activeTab === "incidents" && (
@@ -851,12 +856,13 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
                           </td>
                           <td>
                             <span
-                              className={`badge ${i.status === "resolved"
+                              className={`badge ${
+                                i.status === "resolved"
                                   ? "badge-success"
                                   : i.status === "processing"
                                     ? "badge-warning"
                                     : "badge-danger"
-                                }`}
+                              }`}
                             >
                               {i.status === "resolved"
                                 ? "Đã xử lý"
@@ -1090,148 +1096,355 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
       )}
 
       {/* MODAL CHI TIẾT ĐƠN HÀNG */}
-      {selectedOrderDetail && (() => {
-        const activeAssignment = assignments.find(
-          (a) =>
-            a.order_id?._id === selectedOrderDetail._id ||
-            a.order_id === selectedOrderDetail._id
-        );
-        return (
-          <div className="modal-overlay" onClick={() => setSelectedOrderDetail(null)}>
+      {selectedOrderDetail &&
+        (() => {
+          const activeAssignment = assignments.find(
+            (a) =>
+              a.order_id?._id === selectedOrderDetail._id ||
+              a.order_id === selectedOrderDetail._id,
+          );
+          return (
             <div
-              className="modal-content animate-fade-in"
-              style={{ maxWidth: "650px", width: "100%" }}
-              onClick={(e) => e.stopPropagation()}
+              className="modal-overlay"
+              onClick={() => setSelectedOrderDetail(null)}
             >
-              <div className="modal-header">
-                <h3
-                  className="modal-title"
-                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
-                >
-                  <FileText size={18} color="var(--primary)" />
-                  Chi Tiết Đơn Hàng #{selectedOrderDetail.order_code}
-                </h3>
-                <button
-                  className="modal-close"
-                  onClick={() => setSelectedOrderDetail(null)}
-                >
-                  ×
-                </button>
-              </div>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                {/* Thông tin chung: Trạng thái & Độ ưu tiên */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border-color)", paddingBottom: "12px" }}>
-                  <div>
-                    <span style={{ color: "var(--text-muted)", fontSize: "13px", marginRight: "8px" }}>Trạng thái:</span>
-                    <span
-                      className={`badge ${selectedOrderDetail.status === "pending"
-                          ? "badge-info"
-                          : selectedOrderDetail.status === "assigned"
-                            ? "badge-primary"
-                            : selectedOrderDetail.status === "in_transit"
-                              ? "badge-warning"
-                              : selectedOrderDetail.status === "delivered"
-                                ? "badge-success"
-                                : "badge-danger"
-                        }`}
-                    >
-                      {selectedOrderDetail.status === "pending"
-                        ? "Chờ điều phối"
-                        : selectedOrderDetail.status === "assigned"
-                          ? "Đã gán xe"
-                          : selectedOrderDetail.status === "in_transit"
-                            ? "Đang đi giao"
-                            : selectedOrderDetail.status === "delivered"
-                              ? "Đã hoàn thành"
-                              : "Đã huỷ"}
-                    </span>
-                  </div>
-                  <div>
-                    <span style={{ color: "var(--text-muted)", fontSize: "13px", marginRight: "8px" }}>Ưu tiên:</span>
-                    <span
-                      className={`badge ${selectedOrderDetail.priority === "urgent"
-                          ? "badge-danger"
-                          : selectedOrderDetail.priority === "high"
-                            ? "badge-warning"
-                            : "badge-primary"
-                        }`}
-                    >
-                      {selectedOrderDetail.priority === "urgent"
-                        ? "Khẩn cấp"
-                        : selectedOrderDetail.priority === "high"
-                          ? "Cao"
-                          : "Thường"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Sender & Receiver Info (2 Columns) */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-                  <div style={{ background: "rgba(255,255,255,0.03)", padding: "12px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                    <h4 style={{ margin: "0 0 8px 0", color: "var(--primary)", fontSize: "14px", fontWeight: 700 }}>Thông Tin Người Gửi</h4>
-                    <p style={{ margin: "4px 0", fontSize: "13px" }}><strong style={{ color: "var(--text-muted)" }}>Tên:</strong> {selectedOrderDetail.sender_name}</p>
-                    <p style={{ margin: "4px 0", fontSize: "13px" }}><strong style={{ color: "var(--text-muted)" }}>SĐT:</strong> {selectedOrderDetail.sender_phone}</p>
-                    <p style={{ margin: "4px 0", fontSize: "13px", lineHeight: "1.4" }}><strong style={{ color: "var(--text-muted)" }}>Địa chỉ đi:</strong> {selectedOrderDetail.pickup_address}</p>
-                  </div>
-
-                  <div style={{ background: "rgba(255,255,255,0.03)", padding: "12px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                    <h4 style={{ margin: "0 0 8px 0", color: "var(--success)", fontSize: "14px", fontWeight: 700 }}>Thông Tin Người Nhận</h4>
-                    <p style={{ margin: "4px 0", fontSize: "13px" }}><strong style={{ color: "var(--text-muted)" }}>Tên:</strong> {selectedOrderDetail.receiver_name}</p>
-                    <p style={{ margin: "4px 0", fontSize: "13px" }}><strong style={{ color: "var(--text-muted)" }}>SĐT:</strong> {selectedOrderDetail.receiver_phone}</p>
-                    <p style={{ margin: "4px 0", fontSize: "13px", lineHeight: "1.4" }}><strong style={{ color: "var(--text-muted)" }}>Địa chỉ đến:</strong> {selectedOrderDetail.delivery_address}</p>
-                  </div>
-                </div>
-
-                {/* Cargo Details */}
-                <div style={{ background: "rgba(255,255,255,0.03)", padding: "12px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                  <h4 style={{ margin: "0 0 8px 0", color: "#fff", fontSize: "14px", fontWeight: 700 }}>Thông Tin Hàng Hóa</h4>
-                  <p style={{ margin: "4px 0", fontSize: "13px" }}><strong style={{ color: "var(--text-muted)" }}>Mô tả:</strong> {selectedOrderDetail.cargo_description || "Không có mô tả"}</p>
-                  <p style={{ margin: "4px 0", fontSize: "13px" }}><strong style={{ color: "var(--text-muted)" }}>Cân nặng:</strong> {selectedOrderDetail.cargo_weight} kg</p>
-                </div>
-
-                {/* Driver / Vehicle Assignment Details */}
-                <div style={{ background: "rgba(255,255,255,0.03)", padding: "12px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                  <h4 style={{ margin: "0 0 8px 0", color: "var(--warning)", fontSize: "14px", fontWeight: 700 }}>Thông Tin Vận Chuyển</h4>
-                  {activeAssignment ? (
-                    <div>
-                      <p style={{ margin: "4px 0", fontSize: "13px" }}><strong style={{ color: "var(--text-muted)" }}>Tài xế:</strong> {activeAssignment.driver_id?.user_id?.full_name || "N/A"}</p>
-                      <p style={{ margin: "4px 0", fontSize: "13px" }}><strong style={{ color: "var(--text-muted)" }}>Số điện thoại tài xế:</strong> {activeAssignment.driver_id?.user_id?.phone || "N/A"}</p>
-                      <p style={{ margin: "4px 0", fontSize: "13px" }}><strong style={{ color: "var(--text-muted)" }}>Phương tiện:</strong> {activeAssignment.vehicle_id?.plate_number || "N/A"} ({activeAssignment.vehicle_id?.vehicle_type === "truck" ? "Xe Tải" : activeAssignment.vehicle_id?.vehicle_type === "van" ? "Xe Van" : activeAssignment.vehicle_id?.vehicle_type || "N/A"})</p>
-                      <p style={{ margin: "4px 0", fontSize: "13px" }}><strong style={{ color: "var(--text-muted)" }}>Trạng thái giao:</strong> {activeAssignment.assignment_status === "assigned"
-                        ? "Chờ tài xế xác nhận"
-                        : activeAssignment.assignment_status === "accepted"
-                          ? "Tài xế đã nhận"
-                          : activeAssignment.assignment_status === "in_progress"
-                            ? "Đang đi giao hàng"
-                            : activeAssignment.assignment_status === "completed"
-                              ? "Đã giao hàng thành công"
-                              : "Đã hủy"}
-                      </p>
-                      {activeAssignment.note && (
-                        <p style={{ margin: "4px 0", fontSize: "13px" }}><strong style={{ color: "var(--text-muted)" }}>Ghi chú điều phối:</strong> {activeAssignment.note}</p>
-                      )}
-                    </div>
-                  ) : (
-                    <p style={{ margin: "4px 0", fontSize: "13px", color: "var(--text-muted)", fontStyle: "italic" }}>Đơn hàng này chưa được phân công vận chuyển.</p>
-                  )}
-                </div>
-
-                <div style={{ display: "flex", marginTop: "12px" }}>
+              <div
+                className="modal-content animate-fade-in"
+                style={{ maxWidth: "650px", width: "100%" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="modal-header">
+                  <h3
+                    className="modal-title"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <FileText size={18} color="var(--primary)" />
+                    Chi Tiết Đơn Hàng #{selectedOrderDetail.order_code}
+                  </h3>
                   <button
-                    type="button"
-                    className="btn btn-secondary"
-                    style={{ flex: 1 }}
+                    className="modal-close"
                     onClick={() => setSelectedOrderDetail(null)}
                   >
-                    Đóng
+                    ×
                   </button>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "20px",
+                  }}
+                >
+                  {/* Thông tin chung: Trạng thái & Độ ưu tiên */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      borderBottom: "1px solid var(--border-color)",
+                      paddingBottom: "12px",
+                    }}
+                  >
+                    <div>
+                      <span
+                        style={{
+                          color: "var(--text-muted)",
+                          fontSize: "13px",
+                          marginRight: "8px",
+                        }}
+                      >
+                        Trạng thái:
+                      </span>
+                      <span
+                        className={`badge ${
+                          selectedOrderDetail.status === "pending"
+                            ? "badge-info"
+                            : selectedOrderDetail.status === "assigned"
+                              ? "badge-primary"
+                              : selectedOrderDetail.status === "in_transit"
+                                ? "badge-warning"
+                                : selectedOrderDetail.status === "delivered"
+                                  ? "badge-success"
+                                  : "badge-danger"
+                        }`}
+                      >
+                        {selectedOrderDetail.status === "pending"
+                          ? "Chờ điều phối"
+                          : selectedOrderDetail.status === "assigned"
+                            ? "Đã gán xe"
+                            : selectedOrderDetail.status === "in_transit"
+                              ? "Đang đi giao"
+                              : selectedOrderDetail.status === "delivered"
+                                ? "Đã hoàn thành"
+                                : "Đã huỷ"}
+                      </span>
+                    </div>
+                    <div>
+                      <span
+                        style={{
+                          color: "var(--text-muted)",
+                          fontSize: "13px",
+                          marginRight: "8px",
+                        }}
+                      >
+                        Ưu tiên:
+                      </span>
+                      <span
+                        className={`badge ${
+                          selectedOrderDetail.priority === "urgent"
+                            ? "badge-danger"
+                            : selectedOrderDetail.priority === "high"
+                              ? "badge-warning"
+                              : "badge-primary"
+                        }`}
+                      >
+                        {selectedOrderDetail.priority === "urgent"
+                          ? "Khẩn cấp"
+                          : selectedOrderDetail.priority === "high"
+                            ? "Cao"
+                            : "Thường"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Sender & Receiver Info (2 Columns) */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "20px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        background: "rgba(255,255,255,0.03)",
+                        padding: "12px",
+                        borderRadius: "8px",
+                        border: "1px solid rgba(255,255,255,0.05)",
+                      }}
+                    >
+                      <h4
+                        style={{
+                          margin: "0 0 8px 0",
+                          color: "var(--primary)",
+                          fontSize: "14px",
+                          fontWeight: 700,
+                        }}
+                      >
+                        Thông Tin Người Gửi
+                      </h4>
+                      <p style={{ margin: "4px 0", fontSize: "13px" }}>
+                        <strong style={{ color: "var(--text-muted)" }}>
+                          Tên:
+                        </strong>{" "}
+                        {selectedOrderDetail.sender_name}
+                      </p>
+                      <p style={{ margin: "4px 0", fontSize: "13px" }}>
+                        <strong style={{ color: "var(--text-muted)" }}>
+                          SĐT:
+                        </strong>{" "}
+                        {selectedOrderDetail.sender_phone}
+                      </p>
+                      <p
+                        style={{
+                          margin: "4px 0",
+                          fontSize: "13px",
+                          lineHeight: "1.4",
+                        }}
+                      >
+                        <strong style={{ color: "var(--text-muted)" }}>
+                          Địa chỉ đi:
+                        </strong>{" "}
+                        {selectedOrderDetail.pickup_address}
+                      </p>
+                    </div>
+
+                    <div
+                      style={{
+                        background: "rgba(255,255,255,0.03)",
+                        padding: "12px",
+                        borderRadius: "8px",
+                        border: "1px solid rgba(255,255,255,0.05)",
+                      }}
+                    >
+                      <h4
+                        style={{
+                          margin: "0 0 8px 0",
+                          color: "var(--success)",
+                          fontSize: "14px",
+                          fontWeight: 700,
+                        }}
+                      >
+                        Thông Tin Người Nhận
+                      </h4>
+                      <p style={{ margin: "4px 0", fontSize: "13px" }}>
+                        <strong style={{ color: "var(--text-muted)" }}>
+                          Tên:
+                        </strong>{" "}
+                        {selectedOrderDetail.receiver_name}
+                      </p>
+                      <p style={{ margin: "4px 0", fontSize: "13px" }}>
+                        <strong style={{ color: "var(--text-muted)" }}>
+                          SĐT:
+                        </strong>{" "}
+                        {selectedOrderDetail.receiver_phone}
+                      </p>
+                      <p
+                        style={{
+                          margin: "4px 0",
+                          fontSize: "13px",
+                          lineHeight: "1.4",
+                        }}
+                      >
+                        <strong style={{ color: "var(--text-muted)" }}>
+                          Địa chỉ đến:
+                        </strong>{" "}
+                        {selectedOrderDetail.delivery_address}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Cargo Details */}
+                  <div
+                    style={{
+                      background: "rgba(255,255,255,0.03)",
+                      padding: "12px",
+                      borderRadius: "8px",
+                      border: "1px solid rgba(255,255,255,0.05)",
+                    }}
+                  >
+                    <h4
+                      style={{
+                        margin: "0 0 8px 0",
+                        color: "#fff",
+                        fontSize: "14px",
+                        fontWeight: 700,
+                      }}
+                    >
+                      Thông Tin Hàng Hóa
+                    </h4>
+                    <p style={{ margin: "4px 0", fontSize: "13px" }}>
+                      <strong style={{ color: "var(--text-muted)" }}>
+                        Mô tả:
+                      </strong>{" "}
+                      {selectedOrderDetail.cargo_description ||
+                        "Không có mô tả"}
+                    </p>
+                    <p style={{ margin: "4px 0", fontSize: "13px" }}>
+                      <strong style={{ color: "var(--text-muted)" }}>
+                        Cân nặng:
+                      </strong>{" "}
+                      {selectedOrderDetail.cargo_weight} kg
+                    </p>
+                  </div>
+
+                  {/* Driver / Vehicle Assignment Details */}
+                  <div
+                    style={{
+                      background: "rgba(255,255,255,0.03)",
+                      padding: "12px",
+                      borderRadius: "8px",
+                      border: "1px solid rgba(255,255,255,0.05)",
+                    }}
+                  >
+                    <h4
+                      style={{
+                        margin: "0 0 8px 0",
+                        color: "var(--warning)",
+                        fontSize: "14px",
+                        fontWeight: 700,
+                      }}
+                    >
+                      Thông Tin Vận Chuyển
+                    </h4>
+                    {activeAssignment ? (
+                      <div>
+                        <p style={{ margin: "4px 0", fontSize: "13px" }}>
+                          <strong style={{ color: "var(--text-muted)" }}>
+                            Tài xế:
+                          </strong>{" "}
+                          {activeAssignment.driver_id?.user_id?.full_name ||
+                            "N/A"}
+                        </p>
+                        <p style={{ margin: "4px 0", fontSize: "13px" }}>
+                          <strong style={{ color: "var(--text-muted)" }}>
+                            Số điện thoại tài xế:
+                          </strong>{" "}
+                          {activeAssignment.driver_id?.user_id?.phone || "N/A"}
+                        </p>
+                        <p style={{ margin: "4px 0", fontSize: "13px" }}>
+                          <strong style={{ color: "var(--text-muted)" }}>
+                            Phương tiện:
+                          </strong>{" "}
+                          {activeAssignment.vehicle_id?.plate_number || "N/A"} (
+                          {activeAssignment.vehicle_id?.vehicle_type === "truck"
+                            ? "Xe Tải"
+                            : activeAssignment.vehicle_id?.vehicle_type ===
+                                "van"
+                              ? "Xe Van"
+                              : activeAssignment.vehicle_id?.vehicle_type ||
+                                "N/A"}
+                          )
+                        </p>
+                        <p style={{ margin: "4px 0", fontSize: "13px" }}>
+                          <strong style={{ color: "var(--text-muted)" }}>
+                            Trạng thái giao:
+                          </strong>{" "}
+                          {activeAssignment.assignment_status === "assigned"
+                            ? "Chờ tài xế xác nhận"
+                            : activeAssignment.assignment_status === "accepted"
+                              ? "Tài xế đã nhận"
+                              : activeAssignment.assignment_status ===
+                                  "in_progress"
+                                ? "Đang đi giao hàng"
+                                : activeAssignment.assignment_status ===
+                                    "completed"
+                                  ? "Đã giao hàng thành công"
+                                  : "Đã hủy"}
+                        </p>
+                        {activeAssignment.note && (
+                          <p style={{ margin: "4px 0", fontSize: "13px" }}>
+                            <strong style={{ color: "var(--text-muted)" }}>
+                              Ghi chú điều phối:
+                            </strong>{" "}
+                            {activeAssignment.note}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <p
+                        style={{
+                          margin: "4px 0",
+                          fontSize: "13px",
+                          color: "var(--text-muted)",
+                          fontStyle: "italic",
+                        }}
+                      >
+                        Đơn hàng này chưa được phân công vận chuyển.
+                      </p>
+                    )}
+                  </div>
+
+                  <div style={{ display: "flex", marginTop: "12px" }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ flex: 1 }}
+                      onClick={() => setSelectedOrderDetail(null)}
+                    >
+                      Đóng
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
     </div>
   );
 }
