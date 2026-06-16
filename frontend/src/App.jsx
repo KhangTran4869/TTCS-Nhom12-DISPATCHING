@@ -41,15 +41,19 @@ function App() {
   }, []);
 
   // Handle login
-  const handleLogin = (userData) => {
+  const handleLogin = (userData, token) => {
     setCurrentUser(userData);
     localStorage.setItem('dispatching_user', JSON.stringify(userData));
+    if (token) {
+      localStorage.setItem('dispatching_token', token);
+    }
   };
 
   // Handle logout
   const handleLogout = () => {
     setCurrentUser(null);
     localStorage.removeItem('dispatching_user');
+    localStorage.removeItem('dispatching_token');
     setAuthView('login');
     showToast('Đã đăng xuất thành công', 'info');
   };
@@ -86,18 +90,6 @@ function App() {
             showToast={showToast}
           />
         )}
-
-        {/* Toast Notifications */}
-        <div className="toast-container">
-          {toasts.map((toast) => (
-            <div key={toast.id} className={`toast ${toast.type}`}>
-              <span>
-                {toast.type === 'success' ? '✅' : toast.type === 'warning' ? '⚠️' : toast.type === 'danger' ? '❌' : 'ℹ️'}
-              </span>
-              <div>{toast.message}</div>
-            </div>
-          ))}
-        </div>
       </div>
     );
   }
@@ -129,18 +121,6 @@ function App() {
       <main style={{ flex: 1 }}>
         {renderDashboard()}
       </main>
-
-      {/* Toast Notifications */}
-      <div className="toast-container">
-        {toasts.map((toast) => (
-          <div key={toast.id} className={`toast ${toast.type}`}>
-            <span>
-              {toast.type === 'success' ? '✅' : toast.type === 'warning' ? '⚠️' : toast.type === 'danger' ? '❌' : 'ℹ️'}
-            </span>
-            <div>{toast.message}</div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { BarChart3, ShieldAlert, Truck, Users, PlusCircle, Wrench, Settings, Trash2, CheckCircle, Clock, Loader, Star } from 'lucide-react';
+import { BarChart3, ShieldAlert, Truck, Users, PlusCircle, Wrench, Settings, Trash2, CheckCircle, Clock, Loader, Star, LogOut } from 'lucide-react';
 
-function ManagerDashboard({ user, showToast }) {
+function ManagerDashboard({ user, showToast, onLogout }) {
   const [activeTab, setActiveTab] = useState('analytics'); // 'analytics', 'fleet', 'incidents'
   
   // Data State
@@ -177,6 +177,9 @@ function ManagerDashboard({ user, showToast }) {
             Xem báo cáo tổng hợp và điều hành hoạt động của doanh nghiệp vận tải.
           </p>
         </div>
+        <button className="btn btn-secondary" onClick={onLogout}>
+          <LogOut size={16} /> Đăng xuất
+        </button>
       </div>
 
       {/* Tabs */}
