@@ -1,4 +1,0 @@
-pass: mniWlO4H1zkWT6MT
-username: gk4869303_db_user
-
-connetion string:mongodb+srv://gk4869303_db_user:mniWlO4H1zkWT6MT@cluster0.ua4lcwc.mongodb.net/?appName=Cluster0
