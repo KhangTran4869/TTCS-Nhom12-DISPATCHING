@@ -23,6 +23,8 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/dispatch-assignments", dispatchAssignmentRoutes);
 app.use("/api/driver-locations", driverLocationRoutes);
 app.use("/api/incidents", incidentRoutes);
+app.use("/api/auth", authRoutes);
+
 connectDB().then(() => {
   app.listen(PORT, "127.0.0.1", () => {
     console.log(`Server đang chạy ở http://127.0.0.1:${PORT}`);

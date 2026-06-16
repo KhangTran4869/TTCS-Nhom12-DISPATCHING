@@ -1,14 +1,24 @@
-import { useState } from 'react';
-import { UserPlus, Mail, Lock, User, Phone, Loader, Eye, EyeOff, Shield } from 'lucide-react';
+import { useState } from "react";
+import {
+  UserPlus,
+  Mail,
+  Lock,
+  User,
+  Phone,
+  Loader,
+  Eye,
+  EyeOff,
+  Shield,
+} from "lucide-react";
 
 function Register({ onRegisterSuccess, onSwitchToLogin, showToast }) {
   const [formData, setFormData] = useState({
-    full_name: '',
-    email: '',
-    phone: '',
-    role: 'driver',
-    password: '',
-    confirmPassword: '',
+    full_name: "",
+    email: "",
+    phone: "",
+    role: "driver",
+    password: "",
+    confirmPassword: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -20,26 +30,43 @@ function Register({ onRegisterSuccess, onSwitchToLogin, showToast }) {
 
   const validateForm = () => {
     if (!formData.full_name.trim()) {
-      showToast('Vui lòng nhập họ và tên', 'warning');
+      showToast("Vui lòng nhập họ và tên", "warning");
       return false;
     }
+
     if (!formData.email.trim()) {
-      showToast('Vui lòng nhập email', 'warning');
+      showToast("Vui lòng nhập email", "warning");
       return false;
     }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      showToast('Email không hợp lệ', 'warning');
+      showToast("Email không hợp lệ", "warning");
       return false;
     }
+
+    if (!formData.role) {
+      showToast("Vui lòng chọn vai trò tài khoản", "warning");
+      return false;
+    }
+
+    const allowedRoles = ["dispatcher", "driver", "manager", "admin"];
+
+    if (!allowedRoles.includes(formData.role)) {
+      showToast("Vai trò tài khoản không hợp lệ", "warning");
+      return false;
+    }
+
     if (formData.password.length < 6) {
-      showToast('Mật khẩu phải có ít nhất 6 ký tự', 'warning');
+      showToast("Mật khẩu phải có ít nhất 6 ký tự", "warning");
       return false;
     }
+
     if (formData.password !== formData.confirmPassword) {
-      showToast('Xác nhận mật khẩu không khớp', 'warning');
+      showToast("Xác nhận mật khẩu không khớp", "warning");
       return false;
     }
+
     return true;
   };
 
@@ -49,9 +76,9 @@ function Register({ onRegisterSuccess, onSwitchToLogin, showToast }) {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           full_name: formData.full_name.trim(),
           email: formData.email.trim().toLowerCase(),
@@ -63,13 +90,19 @@ function Register({ onRegisterSuccess, onSwitchToLogin, showToast }) {
       const result = await response.json();
 
       if (result.success) {
-        showToast('Đăng ký thành công! Vui lòng đăng nhập.', 'success');
+        showToast("Đăng ký thành công! Vui lòng đăng nhập.", "success");
         onRegisterSuccess();
       } else {
-        showToast(result.message || 'Đăng ký thất bại. Email có thể đã tồn tại.', 'danger');
+        showToast(
+          result.message || "Đăng ký thất bại. Email có thể đã tồn tại.",
+          "danger",
+        );
       }
     } catch (error) {
-      showToast('Không thể kết nối đến máy chủ. Vui lòng kiểm tra backend.', 'danger');
+      showToast(
+        "Không thể kết nối đến máy chủ. Vui lòng kiểm tra backend.",
+        "danger",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -89,7 +122,9 @@ function Register({ onRegisterSuccess, onSwitchToLogin, showToast }) {
             <Shield size={32} />
           </div>
           <h1 className="auth-title">Tạo Tài Khoản</h1>
-          <p className="auth-subtitle">Đăng ký tài khoản mới để sử dụng hệ thống điều phối</p>
+          <p className="auth-subtitle">
+            Đăng ký tài khoản mới để sử dụng hệ thống điều phối
+          </p>
         </div>
 
         {/* Form */}
@@ -106,7 +141,7 @@ function Register({ onRegisterSuccess, onSwitchToLogin, showToast }) {
                 className="auth-input"
                 placeholder="Nguyễn Văn A"
                 value={formData.full_name}
-                onChange={(e) => handleChange('full_name', e.target.value)}
+                onChange={(e) => handleChange("full_name", e.target.value)}
                 autoComplete="name"
               />
             </div>
@@ -124,14 +159,16 @@ function Register({ onRegisterSuccess, onSwitchToLogin, showToast }) {
                 className="auth-input"
                 placeholder="yourname@company.com"
                 value={formData.email}
-                onChange={(e) => handleChange('email', e.target.value)}
+                onChange={(e) => handleChange("email", e.target.value)}
                 autoComplete="email"
               />
             </div>
           </div>
 
           <div className="auth-input-group">
-            <label className="auth-label">Số điện thoại <span className="auth-optional">(tùy chọn)</span></label>
+            <label className="auth-label">
+              Số điện thoại <span className="auth-optional">(tùy chọn)</span>
+            </label>
             <div className="auth-input-wrapper">
               <span className="auth-input-icon">
                 <Phone size={18} />
@@ -142,7 +179,7 @@ function Register({ onRegisterSuccess, onSwitchToLogin, showToast }) {
                 className="auth-input"
                 placeholder="09XXXXXXXX"
                 value={formData.phone}
-                onChange={(e) => handleChange('phone', e.target.value)}
+                onChange={(e) => handleChange("phone", e.target.value)}
                 autoComplete="tel"
               />
             </div>
@@ -158,18 +195,18 @@ function Register({ onRegisterSuccess, onSwitchToLogin, showToast }) {
                 id="register-role"
                 className="auth-input"
                 value={formData.role}
-                onChange={(e) => handleChange('role', e.target.value)}
+                onChange={(e) => handleChange("role", e.target.value)}
                 style={{
-                  paddingRight: '36px',
-                  cursor: 'pointer',
-                  background: 'rgba(0, 0, 0, 0.25)',
-                  color: 'var(--text-main)',
+                  paddingRight: "36px",
+                  cursor: "pointer",
+                  background: "rgba(0, 0, 0, 0.25)",
+                  color: "var(--text-main)",
                 }}
               >
-                <option value="driver" style={{ background: '#111827', color: '#fff' }}>Tài xế (Driver)</option>
-                <option value="dispatcher" style={{ background: '#111827', color: '#fff' }}>Điều phối viên (Dispatcher)</option>
-                <option value="manager" style={{ background: '#111827', color: '#fff' }}>Quản lý (Manager)</option>
-                <option value="admin" style={{ background: '#111827', color: '#fff' }}>Quản trị viên (Admin)</option>
+                <option value="driver" style={{ background: "#111827", color: "#fff" }}>Tài xế (Driver)</option>
+                <option value="dispatcher" style={{ background: "#111827", color: "#fff" }}>Điều phối viên (Dispatcher)</option>
+                <option value="manager" style={{ background: "#111827", color: "#fff" }}>Quản lý (Manager)</option>
+                <option value="admin" style={{ background: "#111827", color: "#fff" }}>Quản trị viên (Admin)</option>
               </select>
             </div>
           </div>
@@ -183,11 +220,11 @@ function Register({ onRegisterSuccess, onSwitchToLogin, showToast }) {
                 </span>
                 <input
                   id="register-password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   className="auth-input"
                   placeholder="Tối thiểu 6 ký tự"
                   value={formData.password}
-                  onChange={(e) => handleChange('password', e.target.value)}
+                  onChange={(e) => handleChange("password", e.target.value)}
                   autoComplete="new-password"
                 />
                 <button
@@ -209,11 +246,13 @@ function Register({ onRegisterSuccess, onSwitchToLogin, showToast }) {
                 </span>
                 <input
                   id="register-confirm-password"
-                  type={showConfirm ? 'text' : 'password'}
+                  type={showConfirm ? "text" : "password"}
                   className="auth-input"
                   placeholder="Nhập lại mật khẩu"
                   value={formData.confirmPassword}
-                  onChange={(e) => handleChange('confirmPassword', e.target.value)}
+                  onChange={(e) =>
+                    handleChange("confirmPassword", e.target.value)
+                  }
                   autoComplete="new-password"
                 />
                 <button
@@ -251,7 +290,7 @@ function Register({ onRegisterSuccess, onSwitchToLogin, showToast }) {
         {/* Footer */}
         <div className="auth-footer">
           <p>
-            Đã có tài khoản?{' '}
+            Đã có tài khoản?{" "}
             <button
               type="button"
               className="auth-link"

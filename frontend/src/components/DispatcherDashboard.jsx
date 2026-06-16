@@ -1,8 +1,20 @@
-import { useState, useEffect } from 'react';
-import { PlusCircle, ListTodo, Map, AlertOctagon, UserCheck, Truck, Loader, Calendar, FileText, Send } from 'lucide-react';
+import { useState, useEffect } from "react";
+import {
+  PlusCircle,
+  ListTodo,
+  Map,
+  AlertOctagon,
+  UserCheck,
+  Truck,
+  Loader,
+  Calendar,
+  FileText,
+  Send,
+  LogOut,
+} from "lucide-react";
 
 function DispatcherDashboard({ user, showToast, onLogout }) {
-  const [activeTab, setActiveTab] = useState('dispatch'); // 'dispatch', 'orders', 'tracking', 'incidents'
+  const [activeTab, setActiveTab] = useState("dispatch"); // 'dispatch', 'orders', 'tracking', 'incidents'
 
   // Data lists
   const [orders, setOrders] = useState([]);
@@ -17,49 +29,63 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [selectedOrderDetail, setSelectedOrderDetail] = useState(null);
   const [newOrder, setNewOrder] = useState({
-    order_code: '',
-    sender_name: '',
-    sender_phone: '',
-    pickup_address: '',
+    order_code: "",
+    sender_name: "",
+    sender_phone: "",
+    pickup_address: "",
     pickup_lat: 21.0285,
     pickup_lng: 105.8542,
-    receiver_name: '',
-    receiver_phone: '',
-    delivery_address: '',
+    receiver_name: "",
+    receiver_phone: "",
+    delivery_address: "",
     delivery_lat: 21.0185,
     delivery_lng: 105.8442,
-    cargo_description: '',
+    cargo_description: "",
     cargo_weight: 150,
-    priority: 'normal',
+    priority: "normal",
   });
 
   // Dispatch Form state
-  const [selectedOrder, setSelectedOrder] = useState('');
-  const [selectedDriver, setSelectedDriver] = useState('');
-  const [selectedVehicle, setSelectedVehicle] = useState('');
-  const [assignmentNote, setAssignmentNote] = useState('');
+  const [selectedOrder, setSelectedOrder] = useState("");
+  const [selectedDriver, setSelectedDriver] = useState("");
+  const [selectedVehicle, setSelectedVehicle] = useState("");
+  const [assignmentNote, setAssignmentNote] = useState("");
   const [dispatching, setDispatching] = useState(false);
 
   // Load all required data
   const loadData = async () => {
     setLoading(true);
     try {
-      const [resOrders, resDrivers, resVehicles, resAssignments, resIncidents, resLocations] = await Promise.all([
-        fetch('/api/orders'),
-        fetch('/api/drivers'),
-        fetch('/api/vehicles'),
-        fetch('/api/dispatch-assignments'),
-        fetch('/api/incidents'),
-        fetch('/api/driver-locations')
+      const [
+        resOrders,
+        resDrivers,
+        resVehicles,
+        resAssignments,
+        resIncidents,
+        resLocations,
+      ] = await Promise.all([
+        fetch("/api/orders"),
+        fetch("/api/drivers"),
+        fetch("/api/vehicles"),
+        fetch("/api/dispatch-assignments"),
+        fetch("/api/incidents"),
+        fetch("/api/driver-locations"),
       ]);
 
-      const [dataOrders, dataDrivers, dataVehicles, dataAssignments, dataIncidents, dataLocations] = await Promise.all([
+      const [
+        dataOrders,
+        dataDrivers,
+        dataVehicles,
+        dataAssignments,
+        dataIncidents,
+        dataLocations,
+      ] = await Promise.all([
         resOrders.json(),
         resDrivers.json(),
         resVehicles.json(),
         resAssignments.json(),
         resIncidents.json(),
-        resLocations.json()
+        resLocations.json(),
       ]);
 
       if (dataOrders.success) setOrders(dataOrders.data || []);
@@ -68,10 +94,9 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
       if (dataAssignments.success) setAssignments(dataAssignments.data || []);
       if (dataIncidents.success) setIncidents(dataIncidents.data || []);
       if (dataLocations.success) setLocations(dataLocations.data || []);
-
     } catch (error) {
       console.error(error);
-      showToast('Lỗi khi tải dữ liệu từ server', 'danger');
+      showToast("Lỗi khi tải dữ liệu từ server", "danger");
     } finally {
       setLoading(false);
     }
@@ -90,82 +115,87 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
   const refreshTrackingData = async () => {
     try {
       const [resAssignments, resLocations, resIncidents] = await Promise.all([
-        fetch('/api/dispatch-assignments'),
-        fetch('/api/driver-locations'),
-        fetch('/api/incidents')
+        fetch("/api/dispatch-assignments"),
+        fetch("/api/driver-locations"),
+        fetch("/api/incidents"),
       ]);
-      const [dataAssignments, dataLocations, dataIncidents] = await Promise.all([
-        resAssignments.json(),
-        resLocations.json(),
-        resIncidents.json()
-      ]);
+      const [dataAssignments, dataLocations, dataIncidents] = await Promise.all(
+        [resAssignments.json(), resLocations.json(), resIncidents.json()],
+      );
       if (dataAssignments.success) setAssignments(dataAssignments.data || []);
       if (dataLocations.success) setLocations(dataLocations.data || []);
       if (dataIncidents.success) setIncidents(dataIncidents.data || []);
     } catch (error) {
-      console.error('Lỗi tự động làm mới tracking:', error);
+      console.error("Lỗi tự động làm mới tracking:", error);
     }
   };
 
   // Helper: Trích xuất tên người dùng của driver
   const getDriverName = (driver) => {
-    if (!driver) return 'Không rõ';
-    return driver.user_id?.full_name || 'Hồ sơ chưa có tên';
+    if (!driver) return "Không rõ";
+    return driver.user_id?.full_name || "Hồ sơ chưa có tên";
   };
 
   // Tạo đơn hàng mới
   const handleCreateOrder = async (e) => {
     e.preventDefault();
-    const orderCodeStr = newOrder.order_code || `ORD-${Date.now().toString().slice(-6)}`;
+    const orderCodeStr =
+      newOrder.order_code || `ORD-${Date.now().toString().slice(-6)}`;
 
     try {
-      const response = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           order_code: orderCodeStr,
           sender_name: newOrder.sender_name,
           sender_phone: newOrder.sender_phone,
           pickup_address: newOrder.pickup_address,
-          pickup_location: { lat: parseFloat(newOrder.pickup_lat), lng: parseFloat(newOrder.pickup_lng) },
+          pickup_location: {
+            lat: parseFloat(newOrder.pickup_lat),
+            lng: parseFloat(newOrder.pickup_lng),
+          },
           receiver_name: newOrder.receiver_name,
           receiver_phone: newOrder.receiver_phone,
           delivery_address: newOrder.delivery_address,
-          delivery_location: { lat: parseFloat(newOrder.delivery_lat), lng: parseFloat(newOrder.delivery_lng) },
+          delivery_location: {
+            lat: parseFloat(newOrder.delivery_lat),
+            lng: parseFloat(newOrder.delivery_lng),
+          },
           cargo_description: newOrder.cargo_description,
           cargo_weight: parseFloat(newOrder.cargo_weight),
           priority: newOrder.priority,
-          status: 'pending'
-        })
+          status: "pending",
+        }),
       });
 
       const result = await response.json();
       if (result.success) {
-        showToast(`Tạo đơn hàng ${orderCodeStr} thành công!`, 'success');
+        showToast(`Tạo đơn hàng ${orderCodeStr} thành công!`, "success");
         setShowOrderModal(false);
         // Reset form
         setNewOrder({
-          order_code: '',
-          sender_name: '',
-          sender_phone: '',
-          pickup_address: '',
+          order_code: "",
+          sender_name: "",
+          sender_phone: "",
+          pickup_address: "",
           pickup_lat: 21.0285,
           pickup_lng: 105.8542,
-          receiver_name: '',
-          receiver_phone: '',
-          delivery_address: '',
+          receiver_name: "",
+          receiver_phone: "",
+          delivery_address: "",
           delivery_lat: 21.0185,
           delivery_lng: 105.8442,
-          cargo_description: '',
+          cargo_description: "",
           cargo_weight: 150,
-          priority: 'normal',
+          priority: "normal",
         });
         loadData();
       } else {
-        showToast(result.message || 'Lỗi khi tạo đơn hàng', 'danger');
+        showToast(result.message || "Lỗi khi tạo đơn hàng", "danger");
       }
     } catch (error) {
-      showToast('Lỗi kết nối máy chủ', 'danger');
+      showToast("Lỗi kết nối máy chủ", "danger");
     }
   };
 
@@ -173,53 +203,77 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
   const handleDispatch = async (e) => {
     e.preventDefault();
     if (!selectedOrder || !selectedDriver || !selectedVehicle) {
-      showToast('Vui lòng chọn đầy đủ Đơn hàng, Tài xế và Phương tiện!', 'warning');
+      showToast(
+        "Vui lòng chọn đầy đủ Đơn hàng, Tài xế và Phương tiện!",
+        "warning",
+      );
       return;
     }
 
     setDispatching(true);
 
     // Lấy thông tin tọa độ từ đơn hàng để gán vào lộ trình route_points
-    const orderObj = orders.find(o => o._id === selectedOrder);
-    const pickupAddress = orderObj?.pickup_address || '';
-    const deliveryAddress = orderObj?.delivery_address || '';
-    const pickupLoc = orderObj?.pickup_location || { lat: 21.0285, lng: 105.8542 };
-    const deliveryLoc = orderObj?.delivery_location || { lat: 21.0185, lng: 105.8442 };
+    const orderObj = orders.find((o) => o._id === selectedOrder);
+    const pickupAddress = orderObj?.pickup_address || "";
+    const deliveryAddress = orderObj?.delivery_address || "";
+    const pickupLoc = orderObj?.pickup_location || {
+      lat: 21.0285,
+      lng: 105.8542,
+    };
+    const deliveryLoc = orderObj?.delivery_location || {
+      lat: 21.0185,
+      lng: 105.8442,
+    };
 
     const routePoints = [
-      { sequence_no: 1, address: pickupAddress, lat: pickupLoc.lat, lng: pickupLoc.lng, point_type: 'pickup' },
-      { sequence_no: 2, address: deliveryAddress, lat: deliveryLoc.lat, lng: deliveryLoc.lng, point_type: 'delivery' }
+      {
+        sequence_no: 1,
+        address: pickupAddress,
+        lat: pickupLoc.lat,
+        lng: pickupLoc.lng,
+        point_type: "pickup",
+      },
+      {
+        sequence_no: 2,
+        address: deliveryAddress,
+        lat: deliveryLoc.lat,
+        lng: deliveryLoc.lng,
+        point_type: "delivery",
+      },
     ];
 
     try {
-      const response = await fetch('/api/dispatch-assignments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/dispatch-assignments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           order_id: selectedOrder,
           driver_id: selectedDriver,
           vehicle_id: selectedVehicle,
           dispatcher_id: user._id,
-          assignment_status: 'assigned',
+          assignment_status: "assigned",
           route_points: routePoints,
-          note: assignmentNote
-        })
+          note: assignmentNote,
+        }),
       });
 
       const result = await response.json();
       if (result.success) {
-        showToast('Phân công vận chuyển thành công! Đơn hàng đã chuyển sang trạng thái Assigned.', 'success');
+        showToast(
+          "Phân công vận chuyển thành công! Đơn hàng đã chuyển sang trạng thái Assigned.",
+          "success",
+        );
         // Reset form chọn
-        setSelectedOrder('');
-        setSelectedDriver('');
-        setSelectedVehicle('');
-        setAssignmentNote('');
+        setSelectedOrder("");
+        setSelectedDriver("");
+        setSelectedVehicle("");
+        setAssignmentNote("");
         loadData();
       } else {
-        showToast(result.message || 'Phân công thất bại', 'danger');
+        showToast(result.message || "Phân công thất bại", "danger");
       }
     } catch (error) {
-      showToast('Lỗi máy chủ', 'danger');
+      showToast("Lỗi máy chủ", "danger");
     } finally {
       setDispatching(false);
     }
@@ -227,71 +281,138 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
 
   // Huỷ phân công
   const handleCancelAssignment = async (id) => {
-    if (!window.confirm('Bạn có chắc chắn muốn hủy phân công này?')) return;
+    if (!window.confirm("Bạn có chắc chắn muốn hủy phân công này?")) return;
     try {
       const response = await fetch(`/api/dispatch-assignments/${id}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assignment_status: 'cancelled' })
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assignment_status: "cancelled" }),
       });
       const result = await response.json();
       if (result.success) {
-        showToast('Đã hủy phân công vận chuyển', 'info');
+        showToast("Đã hủy phân công vận chuyển", "info");
         loadData();
       } else {
-        showToast('Hủy phân công thất bại', 'danger');
+        showToast("Hủy phân công thất bại", "danger");
       }
     } catch (error) {
-      showToast('Lỗi kết nối', 'danger');
+      showToast("Lỗi kết nối", "danger");
     }
   };
 
   // Lọc tài xế và xe khả dụng
-  const availableDrivers = drivers.filter(d => d.current_status === 'available');
-  const availableVehicles = vehicles.filter(v => v.status === 'available');
-  const pendingOrders = orders.filter(o => o.status === 'pending');
+  const availableDrivers = drivers.filter(
+    (d) => d.current_status === "available",
+  );
+  const availableVehicles = vehicles.filter((v) => v.status === "available");
+  const pendingOrders = orders.filter((o) => o.status === "pending");
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1600px', margin: '0 auto', width: '100%' }}>
-
+    <div
+      style={{
+        padding: "24px",
+        maxWidth: "1600px",
+        margin: "0 auto",
+        width: "100%",
+      }}
+    >
       {/* Tiêu đề & Nút Tạo Đơn Hàng Nhanh */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "24px",
+        }}
+      >
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: 800, margin: 0, textAlign: 'left', color: '#fff' }}>
+          <h1
+            style={{
+              fontSize: "24px",
+              fontWeight: 800,
+              margin: 0,
+              textAlign: "left",
+              color: "#fff",
+            }}
+          >
             Bảng Điều Phối Vận Tải
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '4px' }}>
-            Chào {user.full_name}, quản lý đội xe và phân phối đơn hàng hiệu quả.
+          <p
+            style={{
+              color: "var(--text-muted)",
+              fontSize: "14px",
+              marginTop: "4px",
+            }}
+          >
+            Chào {user.full_name}, quản lý đội xe và phân phối đơn hàng hiệu
+            quả.
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button className="btn btn-primary" onClick={() => setShowOrderModal(true)}>
+        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowOrderModal(true)}
+          >
             <PlusCircle size={16} /> Tạo Đơn Hàng Mới
           </button>
           <button className="btn btn-secondary" onClick={onLogout}>
-            Đăng xuất
+            <LogOut size={16} /> Đăng xuất
           </button>
         </div>
       </div>
 
       {/* Tabs */}
       <div className="tabs">
-        <div className={`tab ${activeTab === 'dispatch' ? 'active' : ''}`} onClick={() => setActiveTab('dispatch')}>
-          <UserCheck size={14} style={{ inlineSize: '14px', marginRight: '6px' }} /> Phân Công Giao Nhận
+        <div
+          className={`tab ${activeTab === "dispatch" ? "active" : ""}`}
+          onClick={() => setActiveTab("dispatch")}
+        >
+          <UserCheck
+            size={14}
+            style={{ inlineSize: "14px", marginRight: "6px" }}
+          />{" "}
+          Phân Công Giao Nhận
         </div>
-        <div className={`tab ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>
-          <ListTodo size={14} style={{ inlineSize: '14px', marginRight: '6px' }} /> Danh Sách Đơn Hàng ({orders.length})
+        <div
+          className={`tab ${activeTab === "orders" ? "active" : ""}`}
+          onClick={() => setActiveTab("orders")}
+        >
+          <ListTodo
+            size={14}
+            style={{ inlineSize: "14px", marginRight: "6px" }}
+          />{" "}
+          Danh Sách Đơn Hàng ({orders.length})
         </div>
-
-        <div className={`tab ${activeTab === 'incidents' ? 'active' : ''}`} onClick={() => setActiveTab('incidents')}>
-          <AlertOctagon size={14} style={{ inlineSize: '14px', marginRight: '6px' }} /> Sự Cố Khẩn Cấp ({incidents.filter(i => i.status !== 'resolved').length})
+        <div
+          className={`tab ${activeTab === "tracking" ? "active" : ""}`}
+          onClick={() => setActiveTab("tracking")}
+        >
+          <Map size={14} style={{ inlineSize: "14px", marginRight: "6px" }} />{" "}
+          Giám Sát GPS & Lộ Trình
+        </div>
+        <div
+          className={`tab ${activeTab === "incidents" ? "active" : ""}`}
+          onClick={() => setActiveTab("incidents")}
+        >
+          <AlertOctagon
+            size={14}
+            style={{ inlineSize: "14px", marginRight: "6px" }}
+          />{" "}
+          Sự Cố Khẩn Cấp (
+          {incidents.filter((i) => i.status !== "resolved").length})
         </div>
       </div>
 
       {loading && (
-        <div style={{ display: 'flex', justifyContent: 'center', margin: '40px 0' }}>
-          <Loader style={{ animation: 'statusPulse 1s infinite' }} size={32} />
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            margin: "40px 0",
+          }}
+        >
+          <Loader style={{ animation: "statusPulse 1s infinite" }} size={32} />
         </div>
       )}
 
@@ -299,9 +420,8 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
       {!loading && (
         <>
           {/* TAB 1: PHÂN CÔNG GIAO NHẬN */}
-          {activeTab === 'dispatch' && (
+          {activeTab === "dispatch" && (
             <div className="dashboard-grid" style={{ padding: 0 }}>
-
               {/* Form Phân công */}
               <div className="col-4">
                 <div className="card">
@@ -310,19 +430,31 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
                     Tạo Phân Công Mới
                   </div>
 
-                  <form onSubmit={handleDispatch} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <form
+                    onSubmit={handleDispatch}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "16px",
+                    }}
+                  >
                     <div className="form-group">
-                      <label className="form-label">Chọn Đơn Vận Chuyển Đang Chờ</label>
+                      <label className="form-label">
+                        Chọn Đơn Vận Chuyển Đang Chờ
+                      </label>
                       <select
                         className="form-control"
                         value={selectedOrder}
                         onChange={(e) => setSelectedOrder(e.target.value)}
                         required
                       >
-                        <option value="">-- Chọn đơn hàng ({pendingOrders.length} đơn chờ) --</option>
-                        {pendingOrders.map(o => (
+                        <option value="">
+                          -- Chọn đơn hàng ({pendingOrders.length} đơn chờ) --
+                        </option>
+                        {pendingOrders.map((o) => (
                           <option key={o._id} value={o._id}>
-                            #{o.order_code} - Giao {o.receiver_name} ({o.cargo_weight} kg)
+                            #{o.order_code} - Giao {o.receiver_name} (
+                            {o.cargo_weight} kg)
                           </option>
                         ))}
                       </select>
@@ -336,10 +468,13 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
                         onChange={(e) => setSelectedDriver(e.target.value)}
                         required
                       >
-                        <option value="">-- Chọn tài xế ({availableDrivers.length} rảnh) --</option>
-                        {availableDrivers.map(d => (
+                        <option value="">
+                          -- Chọn tài xế ({availableDrivers.length} rảnh) --
+                        </option>
+                        {availableDrivers.map((d) => (
                           <option key={d._id} value={d._id}>
-                            {getDriverName(d)} (Bằng {d.license_type} - {d.experience_years} năm KN)
+                            {getDriverName(d)} (Bằng {d.license_type} -{" "}
+                            {d.experience_years} năm KN)
                           </option>
                         ))}
                       </select>
@@ -353,17 +488,28 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
                         onChange={(e) => setSelectedVehicle(e.target.value)}
                         required
                       >
-                        <option value="">-- Chọn phương tiện ({availableVehicles.length} rảnh) --</option>
-                        {availableVehicles.map(v => (
+                        <option value="">
+                          -- Chọn phương tiện ({availableVehicles.length} rảnh)
+                          --
+                        </option>
+                        {availableVehicles.map((v) => (
                           <option key={v._id} value={v._id}>
-                            {v.plate_number} - {v.vehicle_type === 'truck' ? 'Xe Tải' : v.vehicle_type === 'van' ? 'Xe Van' : v.vehicle_type} (Tải {v.capacity} kg)
+                            {v.plate_number} -{" "}
+                            {v.vehicle_type === "truck"
+                              ? "Xe Tải"
+                              : v.vehicle_type === "van"
+                                ? "Xe Van"
+                                : v.vehicle_type}{" "}
+                            (Tải {v.capacity} kg)
                           </option>
                         ))}
                       </select>
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label">Ghi chú vận chuyển (nếu có)</label>
+                      <label className="form-label">
+                        Ghi chú vận chuyển (nếu có)
+                      </label>
                       <input
                         type="text"
                         className="form-control"
@@ -373,8 +519,15 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
                       />
                     </div>
 
-                    <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={dispatching}>
-                      {dispatching ? 'Đang phân công...' : 'Xác Nhận Điều Xe & Phân Công'}
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      style={{ width: "100%" }}
+                      disabled={dispatching}
+                    >
+                      {dispatching
+                        ? "Đang phân công..."
+                        : "Xác Nhận Điều Xe & Phân Công"}
                     </button>
                   </form>
                 </div>
@@ -403,53 +556,93 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
                       <tbody>
                         {assignments.length === 0 ? (
                           <tr>
-                            <td colSpan="6" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Chưa có phân công vận chuyển nào.</td>
+                            <td
+                              colSpan="6"
+                              style={{
+                                textAlign: "center",
+                                color: "var(--text-muted)",
+                              }}
+                            >
+                              Chưa có phân công vận chuyển nào.
+                            </td>
                           </tr>
                         ) : (
-                          assignments.map(a => (
+                          assignments.map((a) => (
                             <tr key={a._id}>
                               <td>
-                                <strong style={{ color: '#fff' }}>#{a.order_id?.order_code || 'N/A'}</strong>
-                                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                                  Từ: {a.order_id?.pickup_address.substring(0, 20)}...
+                                <strong style={{ color: "#fff" }}>
+                                  #{a.order_id?.order_code || "N/A"}
+                                </strong>
+                                <div
+                                  style={{
+                                    fontSize: "11px",
+                                    color: "var(--text-muted)",
+                                    marginTop: "2px",
+                                  }}
+                                >
+                                  Từ:{" "}
+                                  {a.order_id?.pickup_address.substring(0, 20)}
+                                  ...
                                 </div>
                               </td>
                               <td>
-                                <div>{a.driver_id?.user_id?.full_name || 'N/A'}</div>
-                                <div style={{ fontSize: '11px', color: 'var(--info-text)', marginTop: '2px', fontWeight: '500' }}>
-                                  {a.assignment_status === 'assigned' || a.assignment_status === 'accepted' ? 'Đang chuẩn bị nhận hàng' :
-                                    a.assignment_status === 'in_progress' ? 'Đang đi giao hàng' :
-                                      a.assignment_status === 'arrived' ? 'Đã đến nơi giao' :
-                                        a.assignment_status === 'completed' ? 'Đã hoàn thành giao' :
-                                          a.assignment_status === 'rejected' ? 'Đã từ chối' : 'Chưa xuất phát'}
-                                </div>
+                                {a.driver_id?.user_id?.full_name || "N/A"}
                               </td>
                               <td>
-                                <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{a.vehicle_id?.plate_number || 'N/A'}</span>
-                              </td>
-                              <td>
-                                <span className={`badge ${a.assignment_status === 'assigned' ? 'badge-primary' :
-                                    a.assignment_status === 'accepted' ? 'badge-info' :
-                                      a.assignment_status === 'in_progress' ? 'badge-warning' :
-                                        a.assignment_status === 'arrived' ? 'badge-info' :
-                                          a.assignment_status === 'completed' ? 'badge-success' : 'badge-danger'
-                                  }`}>
-                                  {a.assignment_status === 'assigned' ? 'Chờ nhận' :
-                                    a.assignment_status === 'accepted' ? 'Đã nhận' :
-                                      a.assignment_status === 'in_progress' ? 'Đang đi' :
-                                        a.assignment_status === 'arrived' ? 'Đã đến nơi' :
-                                          a.assignment_status === 'completed' ? 'Đã giao' : 'Đã huỷ'}
+                                <span
+                                  style={{
+                                    fontFamily: "monospace",
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  {a.vehicle_id?.plate_number || "N/A"}
                                 </span>
                               </td>
-                              <td style={{ fontSize: '12px' }}>
-                                {a.start_time ? new Date(a.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '---'}
+                              <td>
+                                <span
+                                  className={`badge ${a.assignment_status === "assigned"
+                                      ? "badge-primary"
+                                      : a.assignment_status === "accepted"
+                                        ? "badge-info"
+                                        : a.assignment_status === "in_progress"
+                                          ? "badge-warning"
+                                          : a.assignment_status === "completed"
+                                            ? "badge-success"
+                                            : "badge-danger"
+                                    }`}
+                                >
+                                  {a.assignment_status === "assigned"
+                                    ? "Chờ nhận"
+                                    : a.assignment_status === "accepted"
+                                      ? "Đã nhận"
+                                      : a.assignment_status === "in_progress"
+                                        ? "Đang đi"
+                                        : a.assignment_status === "completed"
+                                          ? "Đã giao"
+                                          : "Đã huỷ"}
+                                </span>
+                              </td>
+                              <td style={{ fontSize: "12px" }}>
+                                {a.start_time
+                                  ? new Date(a.start_time).toLocaleTimeString(
+                                    [],
+                                    { hour: "2-digit", minute: "2-digit" },
+                                  )
+                                  : "---"}
                               </td>
                               <td>
-                                {['assigned', 'accepted'].includes(a.assignment_status) && (
-                                  <button className="btn btn-danger btn-sm" onClick={() => handleCancelAssignment(a._id)}>
-                                    Hủy
-                                  </button>
-                                )}
+                                {["assigned", "accepted"].includes(
+                                  a.assignment_status,
+                                ) && (
+                                    <button
+                                      className="btn btn-danger btn-sm"
+                                      onClick={() =>
+                                        handleCancelAssignment(a._id)
+                                      }
+                                    >
+                                      Hủy
+                                    </button>
+                                  )}
                               </td>
                             </tr>
                           ))
@@ -463,7 +656,7 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
           )}
 
           {/* TAB 2: DANH SÁCH ĐƠN HÀNG */}
-          {activeTab === 'orders' && (
+          {activeTab === "orders" && (
             <div className="card">
               <div className="card-title">
                 <ListTodo size={18} />
@@ -484,48 +677,97 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
                   <tbody>
                     {orders.length === 0 ? (
                       <tr>
-                        <td colSpan="6" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Không có đơn hàng nào.</td>
+                        <td
+                          colSpan="6"
+                          style={{
+                            textAlign: "center",
+                            color: "var(--text-muted)",
+                          }}
+                        >
+                          Không có đơn hàng nào.
+                        </td>
                       </tr>
                     ) : (
-                      orders.map(o => (
-                        <tr
-                          key={o._id}
-                          onClick={() => setSelectedOrderDetail(o)}
-                          style={{ cursor: 'pointer' }}
-                          className="hover-row"
-                        >
-                          <td><strong style={{ color: '#fff' }}>#{o.order_code}</strong></td>
+                      orders.map((o) => (
+                        <tr key={o._id}>
+                          <td>
+                            <strong style={{ color: "#fff" }}>
+                              #{o.order_code}
+                            </strong>
+                          </td>
                           <td>
                             <div>{o.sender_name}</div>
-                            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{o.pickup_address}</div>
+                            <div
+                              style={{
+                                fontSize: "11px",
+                                color: "var(--text-muted)",
+                              }}
+                            >
+                              {o.pickup_address}
+                            </div>
                           </td>
                           <td>
                             <div>{o.receiver_name}</div>
-                            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{o.delivery_address}</div>
+                            <div
+                              style={{
+                                fontSize: "11px",
+                                color: "var(--text-muted)",
+                              }}
+                            >
+                              {o.delivery_address}
+                            </div>
                           </td>
                           <td>
-                            <div style={{ fontSize: '13px' }}>{o.cargo_description}</div>
-                            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{o.cargo_weight} kg</div>
+                            <div style={{ fontSize: "13px" }}>
+                              {o.cargo_description}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: "11px",
+                                color: "var(--text-muted)",
+                              }}
+                            >
+                              {o.cargo_weight} kg
+                            </div>
                           </td>
                           <td>
-                            <span className={`badge ${o.priority === 'urgent' ? 'badge-danger' :
-                                o.priority === 'high' ? 'badge-warning' : 'badge-primary'
-                              }`}>
-                              {o.priority === 'urgent' ? 'Khẩn cấp' : o.priority === 'high' ? 'Cao' : 'Thường'}
+                            <span
+                              className={`badge ${o.priority === "urgent"
+                                  ? "badge-danger"
+                                  : o.priority === "high"
+                                    ? "badge-warning"
+                                    : "badge-primary"
+                                }`}
+                            >
+                              {o.priority === "urgent"
+                                ? "Khẩn cấp"
+                                : o.priority === "high"
+                                  ? "Cao"
+                                  : "Thường"}
                             </span>
                           </td>
                           <td>
-                            <span className={`badge ${o.status === 'pending' ? 'badge-info' :
-                                o.status === 'assigned' ? 'badge-primary' :
-                                  o.status === 'in_transit' ? 'badge-warning' :
-                                    o.status === 'arrived' ? 'badge-info' :
-                                      o.status === 'delivered' ? 'badge-success' : 'badge-danger'
-                              }`}>
-                              {o.status === 'pending' ? 'Chờ điều phối' :
-                                o.status === 'assigned' ? 'Đã gán xe' :
-                                  o.status === 'in_transit' ? 'Đang đi giao' :
-                                    o.status === 'arrived' ? 'Đã đến nơi' :
-                                      o.status === 'delivered' ? 'Đã hoàn thành' : 'Đã huỷ'}
+                            <span
+                              className={`badge ${o.status === "pending"
+                                  ? "badge-info"
+                                  : o.status === "assigned"
+                                    ? "badge-primary"
+                                    : o.status === "in_transit"
+                                      ? "badge-warning"
+                                      : o.status === "delivered"
+                                        ? "badge-success"
+                                        : "badge-danger"
+                                }`}
+                            >
+                              {o.status === "pending"
+                                ? "Chờ điều phối"
+                                : o.status === "assigned"
+                                  ? "Đã gán xe"
+                                  : o.status === "in_transit"
+                                    ? "Đang đi giao"
+                                    : o.status === "delivered"
+                                      ? "Đã hoàn thành"
+                                      : "Đã huỷ"}
                             </span>
                           </td>
                         </tr>
@@ -537,11 +779,223 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
             </div>
           )}
 
+          {/* TAB 3: GIÁM SÁT HÀNH TRÌNH GPS */}
+          {activeTab === "tracking" && (
+            <div className="dashboard-grid" style={{ padding: 0 }}>
+              {/* Cột trái: Danh sách các xe đang chạy */}
+              <div className="col-4">
+                <div className="card">
+                  <div className="card-title">
+                    <Truck size={18} color="var(--info)" />
+                    Xe Đang Giao Hàng
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "12px",
+                    }}
+                  >
+                    {assignments.filter(
+                      (a) => a.assignment_status === "in_progress",
+                    ).length === 0 ? (
+                      <p
+                        style={{
+                          color: "var(--text-muted)",
+                          fontSize: "13px",
+                          textAlign: "center",
+                          padding: "20px 0",
+                        }}
+                      >
+                        Hiện không có chuyến đi nào đang trong tiến trình giao
+                        nhận.
+                      </p>
+                    ) : (
+                      assignments
+                        .filter((a) => a.assignment_status === "in_progress")
+                        .map((a) => {
+                          // Tìm tọa độ GPS mới nhất của tài xế này
+                          const activeLocs = locations.filter(
+                            (l) =>
+                              l.assignment_id && l.assignment_id._id === a._id,
+                          );
+                          const latestLoc = activeLocs[0]; // Sắp xếp giảm dần nên phần tử đầu tiên là mới nhất
+
+                          return (
+                            <div
+                              key={a._id}
+                              style={{
+                                padding: "12px",
+                                borderRadius: "8px",
+                                background: "rgba(255,255,255,0.03)",
+                                border: "1px solid var(--border-color)",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "6px",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                }}
+                              >
+                                <strong
+                                  style={{ color: "#fff", fontSize: "14px" }}
+                                >
+                                  #{a.order_id?.order_code}
+                                </strong>
+                                <span className="pulse-dot"></span>
+                              </div>
+                              <p
+                                style={{
+                                  fontSize: "12px",
+                                  color: "var(--text-muted)",
+                                }}
+                              >
+                                Tài xế: {getDriverName(a.driver_id)} (
+                                {a.vehicle_id?.plate_number})
+                              </p>
+                              {latestLoc ? (
+                                <p
+                                  style={{
+                                    fontSize: "11px",
+                                    color: "var(--info-text)",
+                                    fontFamily: "monospace",
+                                  }}
+                                >
+                                  Tọa độ: {latestLoc.lat.toFixed(5)},{" "}
+                                  {latestLoc.lng.toFixed(5)} ({latestLoc.speed}{" "}
+                                  km/h)
+                                </p>
+                              ) : (
+                                <p
+                                  style={{
+                                    fontSize: "11px",
+                                    color: "var(--text-dark)",
+                                  }}
+                                >
+                                  Chưa cập nhật tín hiệu GPS
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Cột phải: Bản đồ giám sát tổng hợp mô phỏng */}
+              <div className="col-8">
+                <div className="card">
+                  <div className="card-title">
+                    <Map size={18} color="var(--primary)" />
+                    Bản Đồ Vận Tải Trực Tuyến
+                  </div>
+
+                  <div className="map-simulation" style={{ height: "450px" }}>
+                    <div className="map-grid-bg"></div>
+
+                    {/* Vẽ các tuyến đường và vị trí xe */}
+                    {assignments
+                      .filter((a) => a.assignment_status === "in_progress")
+                      .map((a, index) => {
+                        const activeLocs = locations.filter(
+                          (l) =>
+                            l.assignment_id && l.assignment_id._id === a._id,
+                        );
+                        const latestLoc = activeLocs[0];
+
+                        // Vẽ marker xe trên bản đồ ở các vị trí khác nhau để phân biệt
+                        const offsetLat = 21.0285 + index * 0.005 - 0.002;
+                        const offsetLng = 105.8542 + index * 0.005 - 0.002;
+
+                        const latVal = latestLoc ? latestLoc.lat : offsetLat;
+                        const lngVal = latestLoc ? latestLoc.lng : offsetLng;
+
+                        // Chuyển đổi tọa độ thành phần trăm pixel trên màn hình mô phỏng
+                        const mapX = 30 + (((lngVal - 105.85) * 800) % 60);
+                        const mapY = 70 - (((latVal - 21.02) * 800) % 60);
+
+                        return (
+                          <div key={a._id}>
+                            {/* Point A (Pickup) */}
+                            <div
+                              className="map-point pickup"
+                              style={{
+                                left: `${mapX - 10}%`,
+                                top: `${mapY + 15}%`,
+                                fontSize: "7px",
+                              }}
+                            >
+                              A
+                            </div>
+
+                            {/* Point B (Delivery) */}
+                            <div
+                              className="map-point delivery"
+                              style={{
+                                left: `${mapX + 15}%`,
+                                top: `${mapY - 15}%`,
+                                fontSize: "7px",
+                              }}
+                            >
+                              B
+                            </div>
+
+                            {/* Xe tải */}
+                            <div
+                              className="map-car-marker"
+                              style={{
+                                left: `${mapX}%`,
+                                top: `${mapY}%`,
+                                background:
+                                  index % 2 === 0
+                                    ? "var(--primary)"
+                                    : "var(--info)",
+                              }}
+                            >
+                              <Truck size={14} className="map-car-icon" />
+                            </div>
+
+                            <div
+                              className="map-label"
+                              style={{
+                                left: `${mapX}%`,
+                                top: `${mapY - 7}%`,
+                                transform: "translateX(-50%)",
+                              }}
+                            >
+                              #{a.order_id?.order_code} (
+                              {getDriverName(a.driver_id)})
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                    {assignments.filter(
+                      (a) => a.assignment_status === "in_progress",
+                    ).length === 0 && (
+                        <p style={{ zIndex: 10 }}>
+                          Không có xe nào đang vận hành trên đường.
+                        </p>
+                      )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* TAB 4: DANH SÁCH SỰ CỐ KHẨN CẤP */}
-          {activeTab === 'incidents' && (
+          {activeTab === "incidents" && (
             <div className="card">
-              <div className="card-title" style={{ color: 'var(--danger-text)' }}>
+              <div
+                className="card-title"
+                style={{ color: "var(--danger-text)" }}
+              >
                 <AlertOctagon size={18} />
                 Báo Cáo Sự Cố Trên Lộ Trình Giao Hàng
               </div>
@@ -561,35 +1015,64 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
                   <tbody>
                     {incidents.length === 0 ? (
                       <tr>
-                        <td colSpan="6" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Chưa ghi nhận sự cố nào.</td>
+                        <td
+                          colSpan="6"
+                          style={{
+                            textAlign: "center",
+                            color: "var(--text-muted)",
+                          }}
+                        >
+                          Chưa ghi nhận sự cố nào.
+                        </td>
                       </tr>
                     ) : (
-                      incidents.map(i => (
+                      incidents.map((i) => (
                         <tr key={i._id}>
                           <td>
-                            <strong style={{ color: '#fff' }}>
-                              #{i.assignment_id?.order_id?.order_code || i.assignment_id?._id?.substring(18) || 'N/A'}
+                            <strong style={{ color: "#fff" }}>
+                              #
+                              {i.assignment_id?.order_id?.order_code ||
+                                i.assignment_id?._id?.substring(18) ||
+                                "N/A"}
                             </strong>
                           </td>
-                          <td>{i.reported_by?.full_name || 'N/A'}</td>
+                          <td>{i.reported_by?.full_name || "N/A"}</td>
                           <td>
                             <span className="badge badge-danger">
-                              {i.incident_type === 'traffic' ? 'Kẹt xe' :
-                                i.incident_type === 'accident' ? 'Tai nạn' :
-                                  i.incident_type === 'vehicle_breakdown' ? 'Hỏng xe' :
-                                    i.incident_type === 'customer_issue' ? 'Khách hàng' : 'Khác'}
+                              {i.incident_type === "traffic"
+                                ? "Kẹt xe"
+                                : i.incident_type === "accident"
+                                  ? "Tai nạn"
+                                  : i.incident_type === "vehicle_breakdown"
+                                    ? "Hỏng xe"
+                                    : i.incident_type === "customer_issue"
+                                      ? "Khách hàng"
+                                      : "Khác"}
                             </span>
                           </td>
                           <td>{i.description}</td>
-                          <td style={{ fontSize: '12px' }}>
-                            {new Date(i.createdAt).toLocaleString([], { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
+                          <td style={{ fontSize: "12px" }}>
+                            {new Date(i.createdAt).toLocaleString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              day: "2-digit",
+                              month: "2-digit",
+                            })}
                           </td>
                           <td>
-                            <span className={`badge ${i.status === 'resolved' ? 'badge-success' :
-                                i.status === 'processing' ? 'badge-warning' : 'badge-danger'
-                              }`}>
-                              {i.status === 'resolved' ? 'Đã xử lý' :
-                                i.status === 'processing' ? 'Đang xử lý' : 'Mới tiếp nhận'}
+                            <span
+                              className={`badge ${i.status === "resolved"
+                                  ? "badge-success"
+                                  : i.status === "processing"
+                                    ? "badge-warning"
+                                    : "badge-danger"
+                                }`}
+                            >
+                              {i.status === "resolved"
+                                ? "Đã xử lý"
+                                : i.status === "processing"
+                                  ? "Đang xử lý"
+                                  : "Mới tiếp nhận"}
                             </span>
                           </td>
                         </tr>
@@ -600,32 +1083,46 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
               </div>
             </div>
           )}
-
         </>
       )}
 
       {/* MODAL TẠO ĐƠN HÀNG MỚI */}
       {showOrderModal && (
         <div className="modal-overlay">
-          <div className="modal-content animate-fade-in" style={{ maxWidth: '650px' }}>
+          <div
+            className="modal-content animate-fade-in"
+            style={{ maxWidth: "650px" }}
+          >
             <div className="modal-header">
-              <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h3
+                className="modal-title"
+                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+              >
                 <PlusCircle size={18} color="var(--primary)" />
                 Tạo Đơn Hàng Vận Chuyển Mới
               </h3>
-              <button className="modal-close" onClick={() => setShowOrderModal(false)}>×</button>
+              <button
+                className="modal-close"
+                onClick={() => setShowOrderModal(false)}
+              >
+                ×
+              </button>
             </div>
 
             <form onSubmit={handleCreateOrder}>
               <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label">Mã Đơn Hàng (Tự động nếu để trống)</label>
+                  <label className="form-label">
+                    Mã Đơn Hàng (Tự động nếu để trống)
+                  </label>
                   <input
                     type="text"
                     className="form-control"
                     placeholder="Ví dụ: ORD-998"
                     value={newOrder.order_code}
-                    onChange={(e) => setNewOrder({ ...newOrder, order_code: e.target.value })}
+                    onChange={(e) =>
+                      setNewOrder({ ...newOrder, order_code: e.target.value })
+                    }
                   />
                 </div>
                 <div className="form-group">
@@ -634,7 +1131,9 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
                     type="number"
                     className="form-control"
                     value={newOrder.cargo_weight}
-                    onChange={(e) => setNewOrder({ ...newOrder, cargo_weight: e.target.value })}
+                    onChange={(e) =>
+                      setNewOrder({ ...newOrder, cargo_weight: e.target.value })
+                    }
                     required
                   />
                 </div>
@@ -648,7 +1147,9 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
                     className="form-control"
                     placeholder="Nguyễn Văn Gửi"
                     value={newOrder.sender_name}
-                    onChange={(e) => setNewOrder({ ...newOrder, sender_name: e.target.value })}
+                    onChange={(e) =>
+                      setNewOrder({ ...newOrder, sender_name: e.target.value })
+                    }
                     required
                   />
                 </div>
@@ -659,20 +1160,33 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
                     className="form-control"
                     placeholder="09XXXXXXXX"
                     value={newOrder.sender_phone}
-                    onChange={(e) => setNewOrder({ ...newOrder, sender_phone: e.target.value })}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (/^\d*$/.test(value)) {
+                        setNewOrder({ ...newOrder, sender_phone: value });
+                      }
+                    }}
+                    minLength={10}
+                    maxLength={10}
+                    pattern="[0-9]{10}"
+                    title="Số điện thoại phải gồm đúng 10 chữ số"
                     required
                   />
                 </div>
               </div>
 
               <div className="form-group">
-                <label className="form-label">Địa chỉ NHẬN HÀNG (Điểm đi)</label>
+                <label className="form-label">
+                  Địa chỉ NHẬN HÀNG (Điểm đi)
+                </label>
                 <input
                   type="text"
                   className="form-control"
                   placeholder="Ví dụ: Cảng ICD Gia Lâm, Hà Nội"
                   value={newOrder.pickup_address}
-                  onChange={(e) => setNewOrder({ ...newOrder, pickup_address: e.target.value })}
+                  onChange={(e) =>
+                    setNewOrder({ ...newOrder, pickup_address: e.target.value })
+                  }
                   required
                 />
               </div>
@@ -685,7 +1199,12 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
                     className="form-control"
                     placeholder="Trần Thị Nhận"
                     value={newOrder.receiver_name}
-                    onChange={(e) => setNewOrder({ ...newOrder, receiver_name: e.target.value })}
+                    onChange={(e) =>
+                      setNewOrder({
+                        ...newOrder,
+                        receiver_name: e.target.value,
+                      })
+                    }
                     required
                   />
                 </div>
@@ -696,20 +1215,32 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
                     className="form-control"
                     placeholder="09XXXXXXXX"
                     value={newOrder.receiver_phone}
-                    onChange={(e) => setNewOrder({ ...newOrder, receiver_phone: e.target.value })}
+                    onChange={(e) =>
+                      setNewOrder({
+                        ...newOrder,
+                        receiver_phone: e.target.value,
+                      })
+                    }
                     required
                   />
                 </div>
               </div>
 
               <div className="form-group">
-                <label className="form-label">Địa chỉ GIAO HÀNG (Điểm đến)</label>
+                <label className="form-label">
+                  Địa chỉ GIAO HÀNG (Điểm đến)
+                </label>
                 <input
                   type="text"
                   className="form-control"
                   placeholder="Ví dụ: KCN Bắc Thăng Long, Đông Anh, Hà Nội"
                   value={newOrder.delivery_address}
-                  onChange={(e) => setNewOrder({ ...newOrder, delivery_address: e.target.value })}
+                  onChange={(e) =>
+                    setNewOrder({
+                      ...newOrder,
+                      delivery_address: e.target.value,
+                    })
+                  }
                   required
                 />
               </div>
@@ -722,7 +1253,12 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
                     className="form-control"
                     placeholder="Ví dụ: Thiết bị điện tử đóng thùng gỗ"
                     value={newOrder.cargo_description}
-                    onChange={(e) => setNewOrder({ ...newOrder, cargo_description: e.target.value })}
+                    onChange={(e) =>
+                      setNewOrder({
+                        ...newOrder,
+                        cargo_description: e.target.value,
+                      })
+                    }
                   />
                 </div>
                 <div className="form-group">
@@ -730,7 +1266,9 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
                   <select
                     className="form-control"
                     value={newOrder.priority}
-                    onChange={(e) => setNewOrder({ ...newOrder, priority: e.target.value })}
+                    onChange={(e) =>
+                      setNewOrder({ ...newOrder, priority: e.target.value })
+                    }
                   >
                     <option value="normal">Bình thường</option>
                     <option value="high">Cao</option>
@@ -739,11 +1277,20 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-                <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowOrderModal(false)}>
+              <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ flex: 1 }}
+                  onClick={() => setShowOrderModal(false)}
+                >
                   Hủy bỏ
                 </button>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  style={{ flex: 1 }}
+                >
                   Xác nhận Tạo đơn hàng
                 </button>
               </div>
@@ -751,143 +1298,6 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
           </div>
         </div>
       )}
-
-      {/* MODAL CHI TIẾT ĐƠN HÀNG */}
-      {selectedOrderDetail && (() => {
-        const assignment = assignments.find(a => a.order_id && a.order_id._id === selectedOrderDetail._id);
-
-        return (
-          <div className="modal-overlay" onClick={() => setSelectedOrderDetail(null)}>
-            <div className="modal-content animate-fade-in" style={{ maxWidth: '650px' }} onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FileText size={18} color="var(--primary)" />
-                  Chi Tiết Đơn Hàng #{selectedOrderDetail.order_code}
-                </h3>
-                <button className="modal-close" onClick={() => setSelectedOrderDetail(null)}>×</button>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                {/* Thông tin chung */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>TRẠNG THÁI ĐƠN HÀNG</span>
-                    <div style={{ marginTop: '4px' }}>
-                      <span className={`badge ${selectedOrderDetail.status === 'pending' ? 'badge-info' :
-                          selectedOrderDetail.status === 'assigned' ? 'badge-primary' :
-                            selectedOrderDetail.status === 'in_transit' ? 'badge-warning' :
-                              selectedOrderDetail.status === 'arrived' ? 'badge-info' :
-                                selectedOrderDetail.status === 'delivered' ? 'badge-success' : 'badge-danger'
-                        }`}>
-                        {selectedOrderDetail.status === 'pending' ? 'Chờ điều phối' :
-                          selectedOrderDetail.status === 'assigned' ? 'Đã gán xe' :
-                            selectedOrderDetail.status === 'in_transit' ? 'Đang đi giao' :
-                              selectedOrderDetail.status === 'arrived' ? 'Đã đến nơi' :
-                                selectedOrderDetail.status === 'delivered' ? 'Đã hoàn thành' : 'Đã huỷ'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>ĐỘ ƯU TIÊN</span>
-                    <div style={{ marginTop: '4px' }}>
-                      <span className={`badge ${selectedOrderDetail.priority === 'urgent' ? 'badge-danger' :
-                          selectedOrderDetail.priority === 'high' ? 'badge-warning' : 'badge-primary'
-                        }`}>
-                        {selectedOrderDetail.priority === 'urgent' ? 'Khẩn cấp' : selectedOrderDetail.priority === 'high' ? 'Cao' : 'Thường'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Thông tin hàng hóa */}
-                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
-                  <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '6px' }}>Thông Tin Hàng Hóa</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '10px', fontSize: '13px' }}>
-                    <div>
-                      <span style={{ color: 'var(--text-muted)' }}>Mô tả hàng hóa:</span>
-                      <p style={{ margin: '2px 0 0 0', fontWeight: 600, color: '#fff' }}>{selectedOrderDetail.cargo_description || 'Không ghi chú'}</p>
-                    </div>
-                    <div>
-                      <span style={{ color: 'var(--text-muted)' }}>Trọng lượng:</span>
-                      <p style={{ margin: '2px 0 0 0', fontWeight: 600, color: '#fff' }}>{selectedOrderDetail.cargo_weight} kg</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Người gửi & Người nhận */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '6px', border: '1px solid var(--border-color)', fontSize: '13px', textAlign: 'left' }}>
-                    <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '6px' }}>Thông Tin Người Gửi</h4>
-                    <p style={{ margin: '0 0 4px 0' }}><span style={{ color: 'var(--text-muted)' }}>Họ tên:</span> <strong>{selectedOrderDetail.sender_name}</strong></p>
-                    <p style={{ margin: '0 0 8px 0' }}><span style={{ color: 'var(--text-muted)' }}>SĐT:</span> <strong>{selectedOrderDetail.sender_phone}</strong></p>
-                    <p style={{ margin: 0 }}><span style={{ color: 'var(--text-muted)' }}>Địa chỉ:</span> <strong>{selectedOrderDetail.pickup_address}</strong></p>
-                  </div>
-
-                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '6px', border: '1px solid var(--border-color)', fontSize: '13px', textAlign: 'left' }}>
-                    <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '6px' }}>Thông Tin Người Nhận</h4>
-                    <p style={{ margin: '0 0 4px 0' }}><span style={{ color: 'var(--text-muted)' }}>Họ tên:</span> <strong>{selectedOrderDetail.receiver_name}</strong></p>
-                    <p style={{ margin: '0 0 8px 0' }}><span style={{ color: 'var(--text-muted)' }}>SĐT:</span> <strong>{selectedOrderDetail.receiver_phone}</strong></p>
-                    <p style={{ margin: 0 }}><span style={{ color: 'var(--text-muted)' }}>Địa chỉ:</span> <strong>{selectedOrderDetail.delivery_address}</strong></p>
-                  </div>
-                </div>
-
-                {/* Thông tin phân công tài xế & phương tiện */}
-                {assignment ? (
-                  <div style={{ background: 'rgba(129, 140, 248, 0.05)', padding: '16px', borderRadius: '6px', border: '1px solid rgba(129, 140, 248, 0.2)', fontSize: '13px', textAlign: 'left' }}>
-                    <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: 'var(--primary-text)', borderBottom: '1px solid rgba(129, 140, 248, 0.1)', paddingBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Truck size={16} /> Thông Tin Vận Chuyển
-                    </h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                      <div>
-                        <p style={{ margin: '0 0 4px 0' }}><span style={{ color: 'var(--text-muted)' }}>Tài xế:</span> <strong>{assignment.driver_id?.user_id?.full_name || 'N/A'}</strong></p>
-                        <p style={{ margin: '0 0 4px 0' }}><span style={{ color: 'var(--text-muted)' }}>Số điện thoại:</span> <strong>{assignment.driver_id?.user_id?.phone || 'N/A'}</strong></p>
-                        <p style={{ margin: 0 }}><span style={{ color: 'var(--text-muted)' }}>Bằng lái:</span> <strong>{assignment.driver_id?.license_type || 'N/A'} (Kinh nghiệm {assignment.driver_id?.experience_years} năm)</strong></p>
-                      </div>
-                      <div>
-                        <p style={{ margin: '0 0 4px 0' }}><span style={{ color: 'var(--text-muted)' }}>Phương tiện:</span> <strong>{assignment.vehicle_id?.plate_number || 'N/A'}</strong></p>
-                        <p style={{ margin: '0 0 4px 0' }}><span style={{ color: 'var(--text-muted)' }}>Loại xe:</span> <strong>{assignment.vehicle_id?.vehicle_type === 'truck' ? 'Xe tải' : assignment.vehicle_id?.vehicle_type === 'van' ? 'Xe Van' : assignment.vehicle_id?.vehicle_type || 'N/A'}</strong></p>
-                        <p style={{ margin: 0 }}><span style={{ color: 'var(--text-muted)' }}>Người điều phối:</span> <strong>{assignment.dispatcher_id?.full_name || 'N/A'}</strong></p>
-                      </div>
-                    </div>
-                    <div style={{ marginTop: '12px', padding: '10px', borderRadius: '6px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>Vị trí hiện tại:</span>{' '}
-                      <strong style={{ color: 'var(--info-text)' }}>
-                        {assignment.assignment_status === 'assigned' || assignment.assignment_status === 'accepted' ? 'Đang chuẩn bị nhận hàng tại: ' + (selectedOrderDetail.pickup_address || 'Điểm đi') :
-                          assignment.assignment_status === 'in_progress' ? 'Đang di chuyển trên đường giao hàng' :
-                            assignment.assignment_status === 'arrived' ? 'Đã đến điểm giao tại: ' + (selectedOrderDetail.delivery_address || 'Điểm đến') :
-                              assignment.assignment_status === 'completed' ? 'Đã giao hàng thành công' :
-                                assignment.assignment_status === 'rejected' ? 'Đã từ chối' : 'Chưa xuất phát'}
-                      </strong>
-                    </div>
-                    {assignment.note && (
-                      <p style={{ margin: '10px 0 0 0', padding: '6px 10px', borderRadius: '4px', background: 'rgba(0,0,0,0.15)', color: 'var(--warning-text)' }}>
-                        <strong>Ghi chú:</strong> {assignment.note}
-                      </p>
-                    )}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '12px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.05)', fontSize: '11px', color: 'var(--text-muted)' }}>
-                      <span>Phân công lúc: {new Date(assignment.assigned_at).toLocaleString('vi-VN')}</span>
-                      {assignment.start_time && <span>Bắt đầu lúc: {new Date(assignment.start_time).toLocaleString('vi-VN')}</span>}
-                      {assignment.end_time && <span>Kết thúc lúc: {new Date(assignment.end_time).toLocaleString('vi-VN')}</span>}
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ background: 'rgba(239, 68, 68, 0.05)', padding: '16px', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.1)', fontSize: '13px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                    Đơn hàng này chưa được phân công tài xế và phương tiện.
-                  </div>
-                )}
-              </div>
-
-              <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-                <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setSelectedOrderDetail(null)}>
-                  Đóng
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-
     </div>
   );
 }

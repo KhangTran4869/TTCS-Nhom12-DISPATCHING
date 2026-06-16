@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BarChart3, ShieldAlert, Truck, Users, PlusCircle, Wrench, Settings, Trash2, CheckCircle, Clock, Loader, Star } from 'lucide-react';
+import { BarChart3, ShieldAlert, Truck, Users, PlusCircle, Wrench, Settings, Trash2, CheckCircle, Clock, Loader, Star, LogOut } from 'lucide-react';
 
 function ManagerDashboard({ user, showToast, onLogout }) {
   const [activeTab, setActiveTab] = useState('analytics'); // 'analytics', 'fleet', 'incidents'
@@ -178,7 +178,7 @@ function ManagerDashboard({ user, showToast, onLogout }) {
           </p>
         </div>
         <button className="btn btn-secondary" onClick={onLogout}>
-          Đăng xuất
+          <LogOut size={16} /> Đăng xuất
         </button>
       </div>
 
