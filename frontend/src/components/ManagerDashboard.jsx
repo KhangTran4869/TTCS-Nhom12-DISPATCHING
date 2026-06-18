@@ -9,6 +9,7 @@ function ManagerDashboard({ user, showToast, onLogout }) {
   const [vehicles, setVehicles] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [incidents, setIncidents] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
 
   // New Vehicle Form State
@@ -21,27 +22,39 @@ function ManagerDashboard({ user, showToast, onLogout }) {
     current_location: 'Hà Nội'
   });
 
+  // New Driver Form State
+  const [showDriverModal, setShowDriverModal] = useState(false);
+  const [newDriver, setNewDriver] = useState({
+    user_id: '',
+    license_number: '',
+    license_type: 'C',
+    experience_years: 0
+  });
+
   const loadData = async () => {
     setLoading(true);
     try {
-      const [resOrders, resVehicles, resDrivers, resIncidents] = await Promise.all([
+      const [resOrders, resVehicles, resDrivers, resIncidents, resUsers] = await Promise.all([
         fetch('/api/orders'),
         fetch('/api/vehicles'),
         fetch('/api/drivers'),
-        fetch('/api/incidents')
+        fetch('/api/incidents'),
+        fetch('/api/users')
       ]);
 
-      const [dataOrders, dataVehicles, dataDrivers, dataIncidents] = await Promise.all([
+      const [dataOrders, dataVehicles, dataDrivers, dataIncidents, dataUsers] = await Promise.all([
         resOrders.json(),
         resVehicles.json(),
         resDrivers.json(),
-        resIncidents.json()
+        resIncidents.json(),
+        resUsers.json()
       ]);
 
       if (dataOrders.success) setOrders(dataOrders.data || []);
       if (dataVehicles.success) setVehicles(dataVehicles.data || []);
       if (dataDrivers.success) setDrivers(dataDrivers.data || []);
       if (dataIncidents.success) setIncidents(dataIncidents.data || []);
+      if (dataUsers.success) setUsers(dataUsers.data || []);
     } catch (error) {
       console.error(error);
       showToast('Lỗi khi đồng bộ dữ liệu quản lý', 'danger');
@@ -86,6 +99,42 @@ function ManagerDashboard({ user, showToast, onLogout }) {
       }
     } catch (error) {
       showToast('Lỗi máy chủ', 'danger');
+    }
+  };
+
+  // Thêm hồ sơ tài xế (Liên kết với User có sẵn)
+  const handleCreateDriver = async (e) => {
+    e.preventDefault();
+    if (!newDriver.user_id || !newDriver.license_number) {
+      showToast('Vui lòng chọn tài khoản và điền đủ thông tin!', 'warning');
+      return;
+    }
+
+    try {
+      const driverRes = await fetch('/api/drivers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: newDriver.user_id,
+          license_number: newDriver.license_number,
+          license_type: newDriver.license_type,
+          experience_years: newDriver.experience_years
+        })
+      });
+      const driverResult = await driverRes.json();
+
+      if (driverResult.success) {
+        showToast('Đã thêm hồ sơ tài xế thành công!', 'success');
+        setShowDriverModal(false);
+        setNewDriver({
+          user_id: '', license_number: '', license_type: 'C', experience_years: 0
+        });
+        loadData();
+      } else {
+        showToast(driverResult.message || 'Lỗi tạo hồ sơ tài xế', 'danger');
+      }
+    } catch (error) {
+      showToast('Lỗi kết nối máy chủ', 'danger');
     }
   };
 
@@ -159,6 +208,10 @@ function ManagerDashboard({ user, showToast, onLogout }) {
   
   const activeDriversCount = drivers.filter(d => d.current_status !== 'off').length;
   
+  const availableUsersForDriver = users.filter(u => 
+    u.role === 'driver' && !drivers.some(d => d.user_id?._id === u._id)
+  );
+
   // Tỷ lệ công suất sử dụng xe (%)
   const vehicleUtilizationRate = vehicles.length > 0 
     ? Math.round((inUseVehiclesCount / vehicles.length) * 100) 
@@ -186,6 +239,9 @@ function ManagerDashboard({ user, showToast, onLogout }) {
       <div className="tabs">
         <div className={`tab ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}>
           <BarChart3 size={14} style={{ inlineSize: '14px', marginRight: '6px' }} /> Số Liệu Thống Kê
+        </div>
+        <div className={`tab ${activeTab === 'drivers' ? 'active' : ''}`} onClick={() => setActiveTab('drivers')}>
+          <Users size={14} style={{ inlineSize: '14px', marginRight: '6px' }} /> Tài Xế Doanh Nghiệp ({drivers.length})
         </div>
         <div className={`tab ${activeTab === 'fleet' ? 'active' : ''}`} onClick={() => setActiveTab('fleet')}>
           <Truck size={14} style={{ inlineSize: '14px', marginRight: '6px' }} /> Đội Xe Doanh Nghiệp ({vehicles.length})
@@ -492,6 +548,71 @@ function ManagerDashboard({ user, showToast, onLogout }) {
             </div>
           )}
 
+          {/* TAB 4: QUẢN LÝ TÀI XẾ */}
+          {activeTab === 'drivers' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button className="btn btn-primary" onClick={() => setShowDriverModal(true)}>
+                  <PlusCircle size={16} /> Thêm Tài Xế Mới
+                </button>
+              </div>
+
+              <div className="card">
+                <div className="table-container">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>Tên tài xế</th>
+                        <th>Email / SĐT</th>
+                        <th>Bằng lái</th>
+                        <th>Kinh nghiệm</th>
+                        <th>Đánh giá</th>
+                        <th>Trạng thái</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {drivers.length === 0 ? (
+                        <tr>
+                          <td colSpan="6" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Chưa có tài xế nào.</td>
+                        </tr>
+                      ) : (
+                        drivers.map(d => (
+                          <tr key={d._id}>
+                            <td><strong style={{ color: '#fff' }}>{d.user_id?.full_name || 'N/A'}</strong></td>
+                            <td>
+                              <div style={{ fontSize: '13px' }}>{d.user_id?.email || 'N/A'}</div>
+                              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{d.user_id?.phone || 'N/A'}</div>
+                            </td>
+                            <td>
+                              <strong style={{ fontFamily: 'monospace' }}>{d.license_number}</strong>
+                              <br/> Hạng: {d.license_type}
+                            </td>
+                            <td>{d.experience_years} năm</td>
+                            <td style={{ color: 'var(--warning-text)', fontWeight: 'bold' }}>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <Star size={12} style={{ fill: 'var(--warning)', color: 'var(--warning)' }} />
+                                {d.rating}
+                              </span>
+                            </td>
+                            <td>
+                              <span className={`badge ${
+                                d.current_status === 'available' ? 'badge-success' :
+                                d.current_status === 'off' ? 'badge-danger' : 'badge-warning'
+                              }`}>
+                                {d.current_status === 'available' ? 'Rảnh' :
+                                 d.current_status === 'off' ? 'Nghỉ' : 'Đang chạy'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
         </>
       )}
 
@@ -558,6 +679,96 @@ function ManagerDashboard({ user, showToast, onLogout }) {
 
               <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
                 <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowVehicleModal(false)}>
+                  Hủy bỏ
+                </button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
+                  Xác Nhận Thêm
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL THÊM TÀI XẾ MỚI */}
+      {showDriverModal && (
+        <div className="modal-overlay">
+          <div className="modal-content animate-fade-in" style={{ maxWidth: '600px' }}>
+            <div className="modal-header">
+              <h3 className="modal-title">
+                <Users size={18} color="var(--primary)" />
+                Thêm Tài Xế Mới
+              </h3>
+              <button className="modal-close" onClick={() => setShowDriverModal(false)}>×</button>
+            </div>
+            
+            <form onSubmit={handleCreateDriver}>
+              <h4 style={{ marginBottom: '12px', color: '#fff', fontSize: '14px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>1. Chọn tài khoản Tài xế</h4>
+              <div className="form-group">
+                <label className="form-label">Tài khoản (Email) *</label>
+                <select 
+                  className="form-control"
+                  value={newDriver.user_id}
+                  onChange={(e) => setNewDriver({...newDriver, user_id: e.target.value})}
+                  required
+                >
+                  <option value="">-- Chọn tài khoản --</option>
+                  {availableUsersForDriver.map(u => (
+                    <option key={u._id} value={u._id}>
+                      {u.email} ({u.full_name})
+                    </option>
+                  ))}
+                </select>
+                {availableUsersForDriver.length === 0 && (
+                  <p style={{ fontSize: '12px', color: 'var(--warning-text)', marginTop: '6px' }}>
+                    * Không có tài khoản tài xế nào trống. Vui lòng hướng dẫn tài xế đăng ký tài khoản trước.
+                  </p>
+                )}
+              </div>
+
+              <h4 style={{ marginTop: '16px', marginBottom: '12px', color: '#fff', fontSize: '14px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>2. Thông tin bằng lái</h4>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Số bằng lái *</label>
+                  <input 
+                    type="text"
+                    className="form-control"
+                    placeholder="VD: 123456789"
+                    value={newDriver.license_number}
+                    onChange={(e) => setNewDriver({...newDriver, license_number: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Hạng bằng *</label>
+                  <select 
+                    className="form-control"
+                    value={newDriver.license_type}
+                    onChange={(e) => setNewDriver({...newDriver, license_type: e.target.value})}
+                  >
+                    <option value="A1">A1</option>
+                    <option value="A2">A2</option>
+                    <option value="B1">B1</option>
+                    <option value="B2">B2</option>
+                    <option value="C">C</option>
+                    <option value="D">D</option>
+                    <option value="E">E</option>
+                  </select>
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Số năm kinh nghiệm</label>
+                <input 
+                  type="number"
+                  className="form-control"
+                  value={newDriver.experience_years}
+                  onChange={(e) => setNewDriver({...newDriver, experience_years: parseInt(e.target.value) || 0})}
+                  min="0"
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+                <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowDriverModal(false)}>
                   Hủy bỏ
                 </button>
                 <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>

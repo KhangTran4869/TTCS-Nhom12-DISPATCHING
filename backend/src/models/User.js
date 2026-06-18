@@ -28,7 +28,7 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["dispatcher", "driver", "manager"],
+      enum: ["admin", "dispatcher", "driver", "manager"],
       required: true,
     },
 
@@ -36,6 +36,16 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ["active", "inactive"],
       default: "active",
+    },
+
+    reset_password_code: {
+      type: String,
+      default: null,
+    },
+
+    reset_password_expires: {
+      type: Date,
+      default: null,
     },
   },
   {

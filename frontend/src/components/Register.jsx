@@ -50,7 +50,7 @@ function Register({ onRegisterSuccess, onSwitchToLogin, showToast }) {
       return false;
     }
 
-    const allowedRoles = ["dispatcher", "driver", "manager"];
+    const allowedRoles = ["admin", "dispatcher", "driver", "manager"];
 
     if (!allowedRoles.includes(formData.role)) {
       showToast("Vai trò tài khoản không hợp lệ", "warning");
@@ -201,6 +201,7 @@ function Register({ onRegisterSuccess, onSwitchToLogin, showToast }) {
                 <option value="driver">Tài xế</option>
                 <option value="dispatcher">Nhân viên điều phối</option>
                 <option value="manager">Quản lý</option>
+                <option value="admin">Quản trị viên (Admin)</option>
               </select>
             </div>
           </div>
