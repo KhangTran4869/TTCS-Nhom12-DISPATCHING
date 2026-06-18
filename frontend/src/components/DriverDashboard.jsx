@@ -446,7 +446,16 @@ function DriverDashboard({ user, showToast, onLogout }) {
               </div>
             </div>
           ) : (
-            <p>Không có hồ sơ tài xế.</p>
+            <div style={{ padding: "20px 0", textAlign: "center" }}>
+              <p style={{ color: "var(--text-muted)", marginBottom: "16px" }}>Không có hồ sơ tài xế.</p>
+              <button
+                className="btn btn-secondary"
+                onClick={onLogout}
+                style={{ width: "100%", gap: "6px" }}
+              >
+                Đăng xuất tài khoản
+              </button>
+            </div>
           )}
         </div>
 
