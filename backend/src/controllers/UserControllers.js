@@ -1,8 +1,23 @@
 import User from "../models/User.js";
+import bcrypt from "bcrypt";
 
 export const createUser = async (req, res) => {
   try {
-    const user = await User.create(req.body);
+    const payload = { ...req.body };
+    
+    // Xử lý hash mật khẩu (từ Admin hoặc Manager truyền lên)
+    const rawPassword = payload.password || payload.password_hash;
+    if (!rawPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng cung cấp mật khẩu",
+      });
+    }
+    
+    payload.password_hash = await bcrypt.hash(rawPassword, 10);
+    delete payload.password;
+
+    const user = await User.create(payload);
 
     res.status(201).json({
       success: true,
@@ -63,9 +78,22 @@ export const getUserById = async (req, res) => {
 
 export const updateUser = async (req, res) => {
   try {
+    const payload = { ...req.body };
+
+    // Nếu có cập nhật mật khẩu
+    const rawPassword = payload.password || payload.password_hash;
+    if (rawPassword) {
+      payload.password_hash = await bcrypt.hash(rawPassword, 10);
+      delete payload.password;
+    } else {
+      // Đảm bảo không ghi đè thành undefined/null nếu frontend vô tình gửi
+      delete payload.password_hash;
+      delete payload.password;
+    }
+
     const user = await User.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      payload,
       {
         new: true,
         runValidators: true,

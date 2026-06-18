@@ -74,6 +74,16 @@ function App() {
   }
 
   // Not logged in — show Login or Register
+  const ToastContainer = (
+    <div className="toast-container">
+      {toasts.map((t) => (
+        <div key={t.id} className={`toast ${t.type}`}>
+          {t.message}
+        </div>
+      ))}
+    </div>
+  );
+
   if (!currentUser) {
     return (
       <div className="app-container">
@@ -90,6 +100,7 @@ function App() {
             showToast={showToast}
           />
         )}
+        {ToastContainer}
       </div>
     );
   }
@@ -121,6 +132,7 @@ function App() {
       <main style={{ flex: 1 }}>
         {renderDashboard()}
       </main>
+      {ToastContainer}
     </div>
   );
 }

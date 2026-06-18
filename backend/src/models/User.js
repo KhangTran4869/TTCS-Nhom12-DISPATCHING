@@ -37,6 +37,16 @@ const userSchema = new mongoose.Schema(
       enum: ["active", "inactive"],
       default: "active",
     },
+
+    reset_password_code: {
+      type: String,
+      default: null,
+    },
+
+    reset_password_expires: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
