@@ -279,6 +279,117 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
     }
   };
 
+  // State cho dropdown cập nhật trạng thái trong modal chi tiết đơn hàng
+  const [updatingOrderStatus, setUpdatingOrderStatus] = useState(false);
+  const [newOrderStatus, setNewOrderStatus] = useState("");
+
+  // Cập nhật trạng thái đơn hàng (dispatcher), giải phóng driver & vehicle nếu cần
+  const handleUpdateOrderStatus = async (order, activeAssignmentForOrder) => {
+    if (!newOrderStatus || newOrderStatus === order.status) {
+      showToast("Vui lòng chọn trạng thái khác với hiện tại", "warning");
+      return;
+    }
+    if (
+      !window.confirm(
+        `Xác nhận cập nhật trạng thái đơn hàng #${order.order_code} sang "${
+          newOrderStatus === "pending"
+            ? "Chờ điều phối"
+            : newOrderStatus === "assigned"
+              ? "Đã gán xe"
+              : newOrderStatus === "in_transit"
+                ? "Đang đi giao"
+                : newOrderStatus === "delivered"
+                  ? "Đã hoàn thành"
+                  : "Đã huỷ"
+        }"?`,
+      )
+    )
+      return;
+
+    setUpdatingOrderStatus(true);
+    try {
+      // 1. Cập nhật trạng thái đơn hàng
+      const resOrder = await fetch(`/api/orders/${order._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newOrderStatus }),
+      });
+      const resultOrder = await resOrder.json();
+      if (!resultOrder.success) {
+        showToast(resultOrder.message || "Cập nhật đơn hàng thất bại", "danger");
+        return;
+      }
+
+      // 2. Nếu trạng thái mới là cancelled hoặc pending → huỷ phân công hiện tại & giải phóng driver, vehicle
+      // (áp dụng giống nút "Từ chối đơn hàng" của driver, hoạt động cả khi tài xế đang giao hàng - in_progress)
+      const shouldFreeResources = ["cancelled", "pending"].includes(newOrderStatus);
+      if (shouldFreeResources && activeAssignmentForOrder) {
+        const assignmentId = activeAssignmentForOrder._id;
+        const driverId =
+          activeAssignmentForOrder.driver_id?._id || activeAssignmentForOrder.driver_id;
+        const vehicleId =
+          activeAssignmentForOrder.vehicle_id?._id || activeAssignmentForOrder.vehicle_id;
+
+        const freeRequests = [];
+
+        // Huỷ phân công vận chuyển hiện tại (nếu chưa ở trạng thái kết thúc) để đồng bộ với trạng thái đơn hàng mới
+        if (
+          assignmentId &&
+          !["completed", "cancelled", "rejected"].includes(
+            activeAssignmentForOrder.assignment_status,
+          )
+        ) {
+          freeRequests.push(
+            fetch(`/api/dispatch-assignments/${assignmentId}/status`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ assignment_status: "cancelled" }),
+            }),
+          );
+        }
+
+        if (driverId) {
+          freeRequests.push(
+            fetch(`/api/drivers/${driverId}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ current_status: "available" }),
+            }),
+          );
+        }
+        if (vehicleId) {
+          freeRequests.push(
+            fetch(`/api/vehicles/${vehicleId}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ status: "available" }),
+            }),
+          );
+        }
+
+        if (freeRequests.length > 0) {
+          await Promise.all(freeRequests);
+          showToast(
+            `Đã cập nhật trạng thái đơn hàng, huỷ phân công vận chuyển và giải phóng tài xế / phương tiện về trạng thái Sẵn sàng.`,
+            "success",
+          );
+        } else {
+          showToast("Đã cập nhật trạng thái đơn hàng.", "success");
+        }
+      } else {
+        showToast("Đã cập nhật trạng thái đơn hàng.", "success");
+      }
+
+      setSelectedOrderDetail(null);
+      setNewOrderStatus("");
+      loadData();
+    } catch (error) {
+      showToast("Lỗi kết nối máy chủ", "danger");
+    } finally {
+      setUpdatingOrderStatus(false);
+    }
+  };
+
   // Huỷ phân công
   const handleCancelAssignment = async (id) => {
     if (!window.confirm("Bạn có chắc chắn muốn hủy phân công này?")) return;
@@ -690,7 +801,10 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
                         <tr
                           key={o._id}
                           style={{ cursor: "pointer" }}
-                          onClick={() => setSelectedOrderDetail(o)}
+                          onClick={() => {
+                            setSelectedOrderDetail(o);
+                            setNewOrderStatus(o.status);
+                          }}
                           title="Bấm để xem chi tiết đơn hàng"
                         >
                           <td>
@@ -1430,12 +1544,78 @@ function DispatcherDashboard({ user, showToast, onLogout }) {
                     )}
                   </div>
 
-                  <div style={{ display: "flex", marginTop: "12px" }}>
+                  {/* Cập nhật trạng thái đơn hàng */}
+                  <div
+                    style={{
+                      background: "rgba(255,255,255,0.03)",
+                      padding: "12px",
+                      borderRadius: "8px",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                    }}
+                  >
+                    <h4
+                      style={{
+                        margin: "0 0 10px 0",
+                        color: "var(--primary)",
+                        fontSize: "14px",
+                        fontWeight: 700,
+                      }}
+                    >
+                      Cập Nhật Trạng Thái Đơn Hàng
+                    </h4>
+                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                      <select
+                        className="form-control"
+                        style={{ flex: 1 }}
+                        value={newOrderStatus || selectedOrderDetail.status}
+                        onChange={(e) => setNewOrderStatus(e.target.value)}
+                      >
+                        <option value="pending">Chờ điều phối</option>
+                        <option value="assigned">Đã gán xe</option>
+                        <option value="in_transit">Đang đi giao</option>
+                        <option value="delivered">Đã hoàn thành</option>
+                        <option value="cancelled">Đã huỷ</option>
+                      </select>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        style={{ whiteSpace: "nowrap" }}
+                        disabled={
+                          updatingOrderStatus ||
+                          !newOrderStatus ||
+                          newOrderStatus === selectedOrderDetail.status
+                        }
+                        onClick={() =>
+                          handleUpdateOrderStatus(selectedOrderDetail, activeAssignment)
+                        }
+                      >
+                        {updatingOrderStatus ? "Đang lưu..." : "Xác nhận"}
+                      </button>
+                    </div>
+                    {["cancelled", "pending"].includes(newOrderStatus) &&
+                      newOrderStatus !== selectedOrderDetail.status &&
+                      activeAssignment && (
+                        <p
+                          style={{
+                            margin: "8px 0 0 0",
+                            fontSize: "12px",
+                            color: "var(--warning)",
+                          }}
+                        >
+                          ⚠️ Phân công vận chuyển hiện tại sẽ bị <strong>huỷ</strong>, tài xế và phương tiện đang được gán sẽ chuyển về trạng thái <strong>Sẵn sàng</strong> (áp dụng cả khi tài xế đang giao hàng).
+                        </p>
+                      )}
+                  </div>
+
+                  <div style={{ display: "flex", marginTop: "4px" }}>
                     <button
                       type="button"
                       className="btn btn-secondary"
                       style={{ flex: 1 }}
-                      onClick={() => setSelectedOrderDetail(null)}
+                      onClick={() => {
+                        setSelectedOrderDetail(null);
+                        setNewOrderStatus("");
+                      }}
                     >
                       Đóng
                     </button>
